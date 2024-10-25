@@ -42,8 +42,8 @@ pub async fn opcontrol(devices: &mut RobotDevices) -> Result<!, OpcontrolError> 
         let speed = curve_stick(state.left_stick.y());
         let turn = curve_stick(state.right_stick.x());
 
-        let left_percent = (speed - turn).clamp(-1.0, 1.0);
-        let right_percent = (speed + turn).clamp(-1.0, 1.0);
+        let left_percent = (speed + turn).clamp(-1.0, 1.0);
+        let right_percent = (speed - turn).clamp(-1.0, 1.0);
 
         devices
             .drivetrain_left
