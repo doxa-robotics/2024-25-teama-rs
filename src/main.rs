@@ -8,7 +8,6 @@ mod opcontrol;
 mod utils;
 
 use alloc::vec;
-use core::time::Duration;
 
 use utils::motor_group::MotorGroup;
 use vexide::prelude::*;
@@ -50,8 +49,22 @@ async fn main(peripherals: Peripherals) {
         devices: RobotDevices {
             controller: peripherals.primary_controller,
 
-            drivetrain_left: MotorGroup::from_ports(vec![], Gearset::Blue),
-            drivetrain_right: MotorGroup::from_ports(vec![], Gearset::Blue),
+            drivetrain_left: MotorGroup::from_ports(
+                vec![
+                    (peripherals.port_12, true),
+                    (peripherals.port_14, true),
+                    (peripherals.port_16, true),
+                ],
+                Gearset::Blue,
+            ),
+            drivetrain_right: MotorGroup::from_ports(
+                vec![
+                    (peripherals.port_7, false),
+                    (peripherals.port_8, false),
+                    (peripherals.port_17, false),
+                ],
+                Gearset::Blue,
+            ),
 
             clamp: AdiSolenoid::new(peripherals.adi_a),
             doinker: AdiSolenoid::new(peripherals.adi_b), // TODO

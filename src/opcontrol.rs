@@ -5,7 +5,7 @@ use vexide::{
     prelude::*,
 };
 
-use crate::{utils::motor_group::MotorGroup, RobotDevices};
+use crate::RobotDevices;
 
 fn curve_stick(input: f64) -> f64 {
     let raw = input.powf(2.0);
