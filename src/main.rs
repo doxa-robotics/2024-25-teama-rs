@@ -10,7 +10,7 @@ mod utils;
 use alloc::vec;
 
 use utils::motor_group::MotorGroup;
-use vexide::prelude::*;
+use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 
 struct RobotDevices {
     controller: Controller,
@@ -43,7 +43,7 @@ impl Compete for Robot {
     }
 }
 
-#[vexide::main]
+#[vexide::main(banner(theme = THEME_OFFICIAL_LOGO))]
 async fn main(peripherals: Peripherals) {
     let robot = Robot {
         devices: RobotDevices {
