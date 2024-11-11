@@ -5,6 +5,7 @@ use vexide::{devices::smart::motor::MotorError, prelude::*};
 /// A motor group
 ///
 /// Guaranteed to have at least one motor.
+#[derive(Debug)]
 pub struct MotorGroup(Vec<Motor>);
 
 impl MotorGroup {
