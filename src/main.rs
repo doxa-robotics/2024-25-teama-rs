@@ -20,8 +20,8 @@ struct RobotDevices {
 
     intake: Motor,
     lift: Motor,
-    clamp: AdiSolenoid,
-    doinker: AdiSolenoid,
+    clamp: AdiDigitalOut,
+    doinker: AdiDigitalOut,
 }
 
 struct Robot {
@@ -66,8 +66,8 @@ async fn main(peripherals: Peripherals) {
                 Gearset::Blue,
             ),
 
-            clamp: AdiSolenoid::new(peripherals.adi_a),
-            doinker: AdiSolenoid::new(peripherals.adi_b), // TODO
+            clamp: AdiDigitalOut::new(peripherals.adi_a),
+            doinker: AdiDigitalOut::new(peripherals.adi_f),
             intake: Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
             lift: Motor::new(peripherals.port_21, Gearset::Blue, Direction::Forward), // TODO
         },

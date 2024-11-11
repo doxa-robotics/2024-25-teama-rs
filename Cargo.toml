@@ -14,4 +14,4 @@ compress = true
 [dependencies]
 log = "0.4.22"
 pid = "4.0.0"
-vexide = { git = "https://github.com/vexide/vexide.git", rev = "6b6c0bce5003fb5449dbe925dc5001904b2e520c" }
+vexide = { git = "https://github.com/vexide/vexide.git", rev = "1f55deca079e25c7030db9429dee4afde1e8c80c" }

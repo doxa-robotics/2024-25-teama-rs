@@ -21,6 +21,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
 
 [[package]]
+name = "bytemuck"
+version = "1.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8334215b81e418a0a7bdb8ef0849474f40bb10c8b71f1c4ed315cff49f32494d"
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -208,6 +214,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3a8614ee435691de62bcffcf4a66d91b3594bf1428a5722e79103249a095690"
 
 [[package]]
+name = "rgb"
+version = "0.8.50"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57397d16646700483b67d2dd6511d79318f9d057fdbd21a4066aeac8b41d310a"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "rustc_version"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -357,8 +372,8 @@ checksum = "cddff1d9785c5e35e031340c0a24afbeb911a654f99fec062c5ec94281c189ed"
 
 [[package]]
 name = "vexide"
-version = "0.4.1"
-source = "git+https://github.com/vexide/vexide.git?rev=6b6c0bce5003fb5449dbe925dc5001904b2e520c#6b6c0bce5003fb5449dbe925dc5001904b2e520c"
+version = "0.5.0-rc.2"
+source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
 dependencies = [
  "vex-sdk",
  "vexide-async",
@@ -371,8 +386,8 @@ dependencies = [
 
 [[package]]
 name = "vexide-async"
-version = "0.1.4"
-source = "git+https://github.com/vexide/vexide.git?rev=6b6c0bce5003fb5449dbe925dc5001904b2e520c#6b6c0bce5003fb5449dbe925dc5001904b2e520c"
+version = "0.1.6-rc.1"
+source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
 dependencies = [
  "async-task",
  "vex-sdk",
@@ -382,8 +397,8 @@ dependencies = [
 
 [[package]]
 name = "vexide-core"
-version = "0.4.1"
-source = "git+https://github.com/vexide/vexide.git?rev=6b6c0bce5003fb5449dbe925dc5001904b2e520c#6b6c0bce5003fb5449dbe925dc5001904b2e520c"
+version = "0.5.0-rc.2"
+source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
 dependencies = [
  "bitflags",
  "dlmalloc",
@@ -401,12 +416,13 @@ dependencies = [
 
 [[package]]
 name = "vexide-devices"
-version = "0.4.1"
-source = "git+https://github.com/vexide/vexide.git?rev=6b6c0bce5003fb5449dbe925dc5001904b2e520c#6b6c0bce5003fb5449dbe925dc5001904b2e520c"
+version = "0.5.0-rc.2"
+source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
 dependencies = [
  "bitflags",
  "mint",
  "no_std_io",
+ "rgb",
  "snafu",
  "vex-sdk",
  "vexide-core",
@@ -414,8 +430,8 @@ dependencies = [
 
 [[package]]
 name = "vexide-macro"
-version = "0.3.0"
-source = "git+https://github.com/vexide/vexide.git?rev=6b6c0bce5003fb5449dbe925dc5001904b2e520c#6b6c0bce5003fb5449dbe925dc5001904b2e520c"
+version = "0.3.1-rc.1"
+source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -424,8 +440,8 @@ dependencies = [
 
 [[package]]
 name = "vexide-panic"
-version = "0.1.4"
-source = "git+https://github.com/vexide/vexide.git?rev=6b6c0bce5003fb5449dbe925dc5001904b2e520c#6b6c0bce5003fb5449dbe925dc5001904b2e520c"
+version = "0.1.6-rc.1"
+source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
 dependencies = [
  "snafu",
  "vex-sdk",
@@ -435,8 +451,8 @@ dependencies = [
 
 [[package]]
 name = "vexide-startup"
-version = "0.3.1"
-source = "git+https://github.com/vexide/vexide.git?rev=6b6c0bce5003fb5449dbe925dc5001904b2e520c#6b6c0bce5003fb5449dbe925dc5001904b2e520c"
+version = "0.3.3-rc.1"
+source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
 dependencies = [
  "bitflags",
  "compile-time",
