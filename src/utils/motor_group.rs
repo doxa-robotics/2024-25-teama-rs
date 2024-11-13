@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use alloc::vec::Vec;
 
 use vexide::{devices::smart::motor::MotorError, prelude::*};
@@ -16,7 +18,7 @@ impl MotorGroup {
     ///
     /// Panics if no motors are provided
     pub fn new(motors: Vec<Motor>) -> MotorGroup {
-        if motors.len() == 0 {
+        if motors.is_empty() {
             panic!("MotorGroup::new requires a positive number of motors");
         }
         MotorGroup(motors)
@@ -28,7 +30,7 @@ impl MotorGroup {
     ///
     /// Panics if no ports are provided
     pub fn from_ports(ports: Vec<(SmartPort, bool)>, gearset: Gearset) -> MotorGroup {
-        if ports.len() == 0 {
+        if ports.is_empty() {
             panic!("MotorGroup::from_ports requires a positive number of ports");
         }
         MotorGroup(
@@ -90,5 +92,61 @@ impl MotorGroup {
 
     pub fn target(&self) -> MotorControl {
         self.0[0].target()
+    }
+
+    pub fn position(&self) -> Result<Position, MotorError> {
+        let mut total = Position::from_degrees(0.0);
+        for motor in &self.0 {
+            total += motor.position()?;
+        };
+        // tpr is what position uses internally, so we can use it here to avoid convertion internally
+        Ok(Position::from_ticks(total.as_ticks(4_608_000) / self.0.len() as i64, 4_608_000))
+    }
+
+    pub fn reset_position(&mut self) -> Result<(), MotorError> {
+        for motor in &mut self.0 {
+            motor.reset_position()?;
+        }
+        Ok(())
+    }
+
+    pub fn velocity(&self) -> Result<f64, MotorError> {
+        let mut total = 0.0;
+        for motor in &self.0 {
+            total += motor.velocity()?;
+        }
+        Ok(total / self.0.len() as f64)
+    }
+
+    pub fn voltage(&self) -> Result<f64, MotorError> {
+        let mut total = 0.0;
+        for motor in &self.0 {
+            total += motor.voltage()?;
+        }
+        Ok(total / self.0.len() as f64)
+    }
+
+    pub fn current(&self) -> Result<f64, MotorError> {
+        let mut total = 0.0;
+        for motor in &self.0 {
+            total += motor.current()?;
+        }
+        Ok(total / self.0.len() as f64)
+    }
+
+    pub fn temperature(&self) -> Result<f64, MotorError> {
+        let mut total = 0.0;
+        for motor in &self.0 {
+            total += motor.temperature()?;
+        }
+        Ok(total / self.0.len() as f64)
+    }
+
+    pub fn power(&self) -> Result<f64, MotorError> {
+        let mut total = 0.0;
+        for motor in &self.0 {
+            total += motor.power()?;
+        }
+        Ok(total / self.0.len() as f64)
     }
 }

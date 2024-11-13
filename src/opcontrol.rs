@@ -46,20 +46,22 @@ pub async fn opcontrol(devices: &mut RobotDevices) -> Result<!, OpcontrolError> 
         let right_percent = (speed - turn).clamp(-1.0, 1.0);
 
         devices
-            .drivetrain_left
+            .drivetrain
+            .left()
             .set_voltage(Motor::V5_MAX_VOLTAGE * left_percent)
             .map_err(OpcontrolError::Motor)?;
         devices
-            .drivetrain_right
+            .drivetrain
+            .right()
             .set_voltage(Motor::V5_MAX_VOLTAGE * right_percent)
             .map_err(OpcontrolError::Motor)?;
 
-        if state.right_trigger_1.is_pressed() {
+        if state.button_r1.is_pressed() {
             devices
                 .intake
                 .set_velocity(600)
                 .map_err(OpcontrolError::Motor)?;
-        } else if state.left_trigger_1.is_pressed() {
+        } else if state.button_l1.is_pressed() {
             devices
                 .intake
                 .set_velocity(-600)
