@@ -1,5 +1,7 @@
+use core::time::Duration;
+
 use vexide::{
-    core::println,
+    core::{println, time::Instant},
     devices::smart::{imu::InertialError, motor::MotorError},
     prelude::{sleep, Float, InertialSensor, Motor, SmartDevice},
 };
@@ -38,6 +40,8 @@ pub struct DrivetrainConfig {
     pub drive_tolerance: f64,
     /// The tolerance for velocity (in mm/s)
     pub tolerance_velocity: f64,
+    /// Timeout for driving/turning in ms
+    pub timeout: Duration,
 
     /// The distance a wheel travels in one rotation
     pub wheel_circumference: f64,
@@ -141,6 +145,7 @@ impl Drivetrain {
             .i(self.config.drive_i, f64::MAX)
             .d(self.config.drive_d, f64::MAX);
 
+        let mut last_moving_instant = Instant::now();
         while ((left_distance - target_distance).abs() >= self.config.drive_tolerance
             || (right_distance - target_distance).abs() >= self.config.drive_tolerance)
             || (left_velocity.abs() >= self.config.tolerance_velocity
@@ -163,6 +168,16 @@ impl Drivetrain {
             // Get the current velocity
             left_velocity = self.left.velocity().map_err(DrivetrainError::Motor)?;
             right_velocity = self.right.velocity().map_err(DrivetrainError::Motor)?;
+
+            if left_velocity > self.config.tolerance_velocity
+                || right_velocity > self.config.tolerance_velocity
+            {
+                last_moving_instant = Instant::now();
+            }
+            if last_moving_instant.elapsed() > self.config.timeout {
+                println!("Drivetrain.drive_for timed out");
+                break;
+            }
 
             // Calculate the output
             let left_output = left_controller.next_control_output(left_distance).output;
@@ -199,10 +214,10 @@ impl Drivetrain {
     /// - `target_angle_delta`: The angle to turn by in radians
     pub async fn turn_for(&mut self, target_angle_delta: f64) -> Result<(), DrivetrainError> {
         // Get the initial position
-        self.inertial
-            .reset_heading()
-            .map_err(DrivetrainError::Inertial)?;
-        let mut heading = 0.0;
+        let mut real_heading = self.inertial.heading().map_err(DrivetrainError::Inertial)?;
+        let target_heading = real_heading + target_angle_delta;
+        let mut heading = real_heading;
+        let mut heading_difference = 0.0;
 
         let mut left_velocity = self.left.velocity().map_err(DrivetrainError::Motor)?;
         let mut right_velocity = self.right.velocity().map_err(DrivetrainError::Motor)?;
@@ -214,20 +229,43 @@ impl Drivetrain {
             .i(self.config.turning_i, f64::MAX)
             .d(self.config.turning_d, f64::MAX);
 
-        while (heading - target_angle_delta).abs() >= self.config.turning_tolerance
+        let mut last_moving_instant = Instant::now();
+        while (heading - target_heading).abs() >= self.config.turning_tolerance
             || (left_velocity.abs() >= self.config.tolerance_velocity
                 || right_velocity.abs() >= self.config.tolerance_velocity)
         {
             // Get the current position
-            heading = self
+            real_heading = self
                 .inertial
                 .heading()
                 .map_err(DrivetrainError::Inertial)?
                 .rem_euclid(360.0);
+            heading = real_heading + heading_difference;
+            if real_heading > 300.0 {
+                self.inertial
+                    .set_heading(real_heading - 200.0)
+                    .map_err(DrivetrainError::Inertial)?;
+                heading_difference += 200.0;
+            } else if real_heading < 60.0 {
+                self.inertial
+                    .set_heading(real_heading + 200.0)
+                    .map_err(DrivetrainError::Inertial)?;
+                heading_difference -= 200.0;
+            }
 
             // Get the current velocity
             left_velocity = self.left.velocity().map_err(DrivetrainError::Motor)?;
             right_velocity = self.right.velocity().map_err(DrivetrainError::Motor)?;
+
+            if left_velocity > self.config.tolerance_velocity
+                || right_velocity > self.config.tolerance_velocity
+            {
+                last_moving_instant = Instant::now();
+            }
+            if last_moving_instant.elapsed() > self.config.timeout {
+                println!("Drivetrain.turn_for timed out");
+                break;
+            }
 
             // Calculate the output
             let output = controller.next_control_output(heading).output;

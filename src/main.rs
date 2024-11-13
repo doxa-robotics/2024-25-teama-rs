@@ -8,6 +8,7 @@ mod opcontrol;
 mod utils;
 
 use alloc::vec;
+use core::time::Duration;
 
 use utils::{
     drivetrain::{Drivetrain, DrivetrainConfig},
@@ -90,6 +91,7 @@ async fn main(peripherals: Peripherals) {
                     turning_tolerance: 3.0,
 
                     tolerance_velocity: 5.0,
+                    timeout: Duration::from_secs(1),
                     wheel_circumference: 165.0,
                 },
             ),
