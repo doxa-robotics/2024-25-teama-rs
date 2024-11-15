@@ -16,7 +16,7 @@ use utils::{
     drivetrain::{Drivetrain, DrivetrainConfig},
     motor_group::MotorGroup,
 };
-use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
+use vexide::{devices::peripherals, prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 
 struct RobotDevices {
     controller: Controller,
@@ -76,20 +76,20 @@ async fn main(peripherals: Peripherals) {
                     ],
                     Gearset::Blue,
                 ),
-                InertialSensor::new(peripherals.port_18),
+                AdiAnalogIn::new(peripherals.adi_b),
                 DrivetrainConfig {
-                    drive_p: -0.05,
+                    drive_p: 0.1,
                     drive_d: 0.0,
                     drive_i: 0.0,
                     drive_tolerance: 5.0,
 
-                    turning_p: -0.2,
+                    turning_p: 0.01,
                     turning_d: 0.0,
                     turning_i: 0.0,
                     turning_tolerance: 3.0,
 
                     tolerance_velocity: 5.0,
-                    timeout: Duration::from_secs(999),
+                    timeout: Duration::from_secs(1),
                     wheel_circumference: 165.0,
                 },
             ),
@@ -99,14 +99,9 @@ async fn main(peripherals: Peripherals) {
             intake: Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
             lift: Motor::new(peripherals.port_21, Gearset::Blue, Direction::Forward), // TODO
         },
-        autonomous_routine: Box::new(autonomous::noop::Noop {}),
+        autonomous_routine: Box::new(autonomous::test::Test {}),
     };
 
-    println!("calibrating...");
-    while let Err(err) = robot.devices.drivetrain.inertial().calibrate().await {
-        println!("error: {}", err);
-    }
-    println!("calibrate done");
     println!("competing");
     robot.compete().await;
 }

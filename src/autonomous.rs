@@ -5,12 +5,14 @@ use crate::RobotDevices;
 
 pub mod auton_1;
 pub mod noop;
+pub mod test;
 
 /// Enum of all autonomous routines
 ///
 /// Please remember to add new autonomous routines here when declaring the
 /// module.
-pub static AUTONOMOUS_ROUTINES: &[&dyn AutonomousRoutine] = &[&noop::Noop, &auton_1::Auton1];
+pub static AUTONOMOUS_ROUTINES: &[&dyn AutonomousRoutine] =
+    &[&noop::Noop, &auton_1::Auton1, &test::Test];
 
 pub trait AutonomousRoutine: Sync {
     fn run<'a>(
