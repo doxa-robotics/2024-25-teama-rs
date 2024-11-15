@@ -34,14 +34,9 @@ struct Robot {
 impl Compete for Robot {
     async fn autonomous(&mut self) {
         println!("Autonomous!");
-        // calibrate the inertial sensor
-        self.devices
-            .drivetrain
-            .inertial()
-            .calibrate()
-            .await
-            .unwrap();
+        // calibrate the inertial sensor if it hasn't finished yet
         self.devices.drivetrain.turn_for(90.0).await.unwrap();
+        self.devices.drivetrain.turn_for(-170.0).await.unwrap();
         println!("Autonomous done!");
     }
 
@@ -57,7 +52,9 @@ impl Compete for Robot {
 
 #[vexide::main(banner(theme = THEME_OFFICIAL_LOGO))]
 async fn main(peripherals: Peripherals) {
-    let robot = Robot {
+    let mut doinker = AdiDigitalOut::new(peripherals.adi_f);
+    doinker.set_low().unwrap();
+    let mut robot = Robot {
         devices: RobotDevices {
             controller: peripherals.primary_controller,
 
@@ -85,23 +82,29 @@ async fn main(peripherals: Peripherals) {
                     drive_i: 0.0,
                     drive_tolerance: 5.0,
 
-                    turning_p: 0.01,
+                    turning_p: -0.2,
                     turning_d: 0.0,
                     turning_i: 0.0,
                     turning_tolerance: 3.0,
 
                     tolerance_velocity: 5.0,
-                    timeout: Duration::from_secs(1),
+                    timeout: Duration::from_secs(999),
                     wheel_circumference: 165.0,
                 },
             ),
 
             clamp: AdiDigitalOut::new(peripherals.adi_a),
-            doinker: AdiDigitalOut::new(peripherals.adi_f),
+            doinker,
             intake: Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
             lift: Motor::new(peripherals.port_21, Gearset::Blue, Direction::Forward), // TODO
         },
     };
 
+    println!("calibrating...");
+    while let Err(err) = robot.devices.drivetrain.inertial().calibrate().await {
+        println!("error: {}", err);
+    }
+    println!("calibrate done");
+    println!("competing");
     robot.compete().await;
 }
