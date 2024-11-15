@@ -13,11 +13,12 @@ impl AutonomousRoutine for Auton1 {
         devices: &'a mut RobotDevices,
     ) -> Box<dyn core::future::Future<Output = ()> + Unpin + 'a> {
         Box::new(Box::pin(async move {
+            devices.drivetrain.drive_for(130.0).await.ok();
             devices.drivetrain.broken_turn(50.0).await.ok();
-            devices.drivetrain.drive_for(500.0).await.ok();
+            devices.drivetrain.drive_for(40.0).await.ok();
 
             // Place the ring on the stake
-            devices.intake.set_velocity(600).ok();
+            devices.intake.set_velocity(450).ok();
             sleep(Duration::from_secs(2)).await;
             devices.intake.brake(vexide::prelude::BrakeMode::Brake).ok();
         }))
