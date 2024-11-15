@@ -1,7 +1,7 @@
 use core::time::Duration;
 
 use vexide::{
-    core::{println, time::Instant},
+    core::{dbg, println, time::Instant},
     devices::smart::{imu::InertialError, motor::MotorError},
     prelude::{sleep, Float, InertialSensor, Motor, SmartDevice},
 };
@@ -169,8 +169,8 @@ impl Drivetrain {
             left_velocity = self.left.velocity().map_err(DrivetrainError::Motor)?;
             right_velocity = self.right.velocity().map_err(DrivetrainError::Motor)?;
 
-            if left_velocity > self.config.tolerance_velocity
-                || right_velocity > self.config.tolerance_velocity
+            if left_velocity.abs() > self.config.tolerance_velocity
+                || right_velocity.abs() > self.config.tolerance_velocity
             {
                 last_moving_instant = Instant::now();
             }
@@ -214,7 +214,11 @@ impl Drivetrain {
     /// - `target_angle_delta`: The angle to turn by in radians
     pub async fn turn_for(&mut self, target_angle_delta: f64) -> Result<(), DrivetrainError> {
         // Get the initial position
+        self.inertial
+            .set_heading(180.0)
+            .map_err(DrivetrainError::Inertial)?;
         let mut real_heading = self.inertial.heading().map_err(DrivetrainError::Inertial)?;
+        dbg!(real_heading);
         let target_heading = real_heading + target_angle_delta;
         let mut heading = real_heading;
         let mut heading_difference = 0.0;
@@ -222,8 +226,7 @@ impl Drivetrain {
         let mut left_velocity = self.left.velocity().map_err(DrivetrainError::Motor)?;
         let mut right_velocity = self.right.velocity().map_err(DrivetrainError::Motor)?;
 
-        let mut controller: pid::Pid<f64> =
-            pid::Pid::new(target_angle_delta, Motor::V5_MAX_VOLTAGE);
+        let mut controller: pid::Pid<f64> = pid::Pid::new(target_heading, Motor::V5_MAX_VOLTAGE);
         controller
             .p(self.config.turning_p, f64::MAX)
             .i(self.config.turning_i, f64::MAX)
@@ -235,11 +238,7 @@ impl Drivetrain {
                 || right_velocity.abs() >= self.config.tolerance_velocity)
         {
             // Get the current position
-            real_heading = self
-                .inertial
-                .heading()
-                .map_err(DrivetrainError::Inertial)?
-                .rem_euclid(360.0);
+            real_heading = self.inertial.heading().map_err(DrivetrainError::Inertial)?;
             heading = real_heading + heading_difference;
             if real_heading > 300.0 {
                 self.inertial
@@ -257,8 +256,8 @@ impl Drivetrain {
             left_velocity = self.left.velocity().map_err(DrivetrainError::Motor)?;
             right_velocity = self.right.velocity().map_err(DrivetrainError::Motor)?;
 
-            if left_velocity > self.config.tolerance_velocity
-                || right_velocity > self.config.tolerance_velocity
+            if left_velocity.abs() > self.config.tolerance_velocity
+                || right_velocity.abs() > self.config.tolerance_velocity
             {
                 last_moving_instant = Instant::now();
             }
