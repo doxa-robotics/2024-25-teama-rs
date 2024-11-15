@@ -4,12 +4,14 @@
 
 extern crate alloc;
 
+mod autonomous;
 mod opcontrol;
 mod utils;
 
-use alloc::vec;
-use core::time::Duration;
+use alloc::{boxed::Box, vec};
+use core::{pin::pin, time::Duration};
 
+use autonomous::AutonomousRoutine;
 use utils::{
     drivetrain::{Drivetrain, DrivetrainConfig},
     motor_group::MotorGroup,
@@ -29,6 +31,7 @@ struct RobotDevices {
 
 struct Robot {
     devices: RobotDevices,
+    autonomous_routine: Box<dyn AutonomousRoutine>,
 }
 
 impl Compete for Robot {
@@ -41,7 +44,7 @@ impl Compete for Robot {
             .calibrate()
             .await
             .unwrap();
-        self.devices.drivetrain.turn_for(90.0).await.unwrap();
+        pin!(self.autonomous_routine.run(&mut self.devices)).await;
         println!("Autonomous done!");
     }
 
@@ -101,6 +104,7 @@ async fn main(peripherals: Peripherals) {
             intake: Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
             lift: Motor::new(peripherals.port_21, Gearset::Blue, Direction::Forward), // TODO
         },
+        autonomous_routine: Box::new(autonomous::noop::Noop {}),
     };
 
     robot.compete().await;
