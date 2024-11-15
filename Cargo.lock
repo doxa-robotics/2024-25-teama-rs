@@ -373,7 +373,7 @@ checksum = "cddff1d9785c5e35e031340c0a24afbeb911a654f99fec062c5ec94281c189ed"
 [[package]]
 name = "vexide"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
+source = "git+https://github.com/vexide/vexide.git?rev=0433eedad79d9e54363cd2c5ced0797d0d85e416#0433eedad79d9e54363cd2c5ced0797d0d85e416"
 dependencies = [
  "vex-sdk",
  "vexide-async",
@@ -387,7 +387,7 @@ dependencies = [
 [[package]]
 name = "vexide-async"
 version = "0.1.6-rc.1"
-source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
+source = "git+https://github.com/vexide/vexide.git?rev=0433eedad79d9e54363cd2c5ced0797d0d85e416#0433eedad79d9e54363cd2c5ced0797d0d85e416"
 dependencies = [
  "async-task",
  "vex-sdk",
@@ -398,7 +398,7 @@ dependencies = [
 [[package]]
 name = "vexide-core"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
+source = "git+https://github.com/vexide/vexide.git?rev=0433eedad79d9e54363cd2c5ced0797d0d85e416#0433eedad79d9e54363cd2c5ced0797d0d85e416"
 dependencies = [
  "bitflags",
  "dlmalloc",
@@ -417,7 +417,7 @@ dependencies = [
 [[package]]
 name = "vexide-devices"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
+source = "git+https://github.com/vexide/vexide.git?rev=0433eedad79d9e54363cd2c5ced0797d0d85e416#0433eedad79d9e54363cd2c5ced0797d0d85e416"
 dependencies = [
  "bitflags",
  "mint",
@@ -431,7 +431,7 @@ dependencies = [
 [[package]]
 name = "vexide-macro"
 version = "0.3.1-rc.1"
-source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
+source = "git+https://github.com/vexide/vexide.git?rev=0433eedad79d9e54363cd2c5ced0797d0d85e416#0433eedad79d9e54363cd2c5ced0797d0d85e416"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -441,7 +441,7 @@ dependencies = [
 [[package]]
 name = "vexide-panic"
 version = "0.1.6-rc.1"
-source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
+source = "git+https://github.com/vexide/vexide.git?rev=0433eedad79d9e54363cd2c5ced0797d0d85e416#0433eedad79d9e54363cd2c5ced0797d0d85e416"
 dependencies = [
  "snafu",
  "vex-sdk",
@@ -452,7 +452,7 @@ dependencies = [
 [[package]]
 name = "vexide-startup"
 version = "0.3.3-rc.1"
-source = "git+https://github.com/vexide/vexide.git?rev=1f55deca079e25c7030db9429dee4afde1e8c80c#1f55deca079e25c7030db9429dee4afde1e8c80c"
+source = "git+https://github.com/vexide/vexide.git?rev=0433eedad79d9e54363cd2c5ced0797d0d85e416#0433eedad79d9e54363cd2c5ced0797d0d85e416"
 dependencies = [
  "bitflags",
  "compile-time",
