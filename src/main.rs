@@ -99,7 +99,7 @@ async fn main(peripherals: Peripherals) {
             intake: Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
             lift: Motor::new(peripherals.port_21, Gearset::Blue, Direction::Forward), // TODO
         },
-        autonomous_routine: Box::new(autonomous::test::Test {}),
+        autonomous_routine: Box::new(autonomous::skills::Skills {}),
     };
 
     println!("competing");

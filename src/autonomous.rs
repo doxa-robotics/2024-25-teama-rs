@@ -5,6 +5,7 @@ use crate::RobotDevices;
 
 pub mod auton_1;
 pub mod noop;
+pub mod skills;
 pub mod test;
 
 /// Enum of all autonomous routines

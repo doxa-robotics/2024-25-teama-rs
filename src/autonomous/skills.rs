@@ -5,18 +5,14 @@ use vexide::prelude::sleep;
 
 use crate::{autonomous::AutonomousRoutine, RobotDevices};
 
-pub struct Auton1;
+pub struct Skills;
 
-impl AutonomousRoutine for Auton1 {
+impl AutonomousRoutine for Skills {
     fn run<'a>(
         &'a self,
         devices: &'a mut RobotDevices,
     ) -> Box<dyn core::future::Future<Output = ()> + Unpin + 'a> {
         Box::new(Box::pin(async move {
-            devices.drivetrain.drive_for(-290.0).await.ok();
-            devices.drivetrain.broken_turn(240.0).await.ok();
-            devices.drivetrain.drive_for(-60.0).await.ok();
-
             // Place the ring on the stake
             devices.intake.set_velocity(450).ok();
             sleep(Duration::from_secs(2)).await;
