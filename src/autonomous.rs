@@ -4,6 +4,7 @@ use core::future::Future;
 use crate::RobotDevices;
 
 pub mod auton_1;
+pub mod auton_2;
 pub mod noop;
 pub mod skills;
 pub mod test;
