@@ -16,7 +16,7 @@ use utils::{
     drivetrain::{Drivetrain, DrivetrainConfig},
     motor_group::MotorGroup,
 };
-use vexide::{devices::peripherals, prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
+use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 
 struct RobotDevices {
     controller: Controller,
