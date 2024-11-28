@@ -76,20 +76,20 @@ async fn main(peripherals: Peripherals) {
                     ],
                     Gearset::Blue,
                 ),
-                AdiAnalogIn::new(peripherals.adi_b),
+                InertialSensor::new(peripherals.port_18),
                 DrivetrainConfig {
-                    drive_p: 0.1,
-                    drive_d: 0.0,
+                    drive_p: 0.3,
                     drive_i: 0.0,
+                    drive_d: 0.0,
                     drive_tolerance: 5.0,
 
-                    turning_p: 0.01,
-                    turning_d: 0.0,
-                    turning_i: 0.0,
+                    turning_p: 0.3,
+                    turning_i: 0.001,
+                    turning_d: 0.1,
                     turning_tolerance: 3.0,
 
                     tolerance_velocity: 5.0,
-                    timeout: Duration::from_secs(1),
+                    timeout: Duration::from_secs(3),
                     wheel_circumference: 165.0,
                 },
             ),
@@ -99,9 +99,16 @@ async fn main(peripherals: Peripherals) {
             intake: Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
             lift: Motor::new(peripherals.port_21, Gearset::Blue, Direction::Forward), // TODO
         },
-        autonomous_routine: Box::new(autonomous::skills::Skills {}),
+        autonomous_routine: Box::new(autonomous::test::Test {}),
     };
 
     println!("competing");
+    robot
+        .devices
+        .drivetrain
+        .inertial()
+        .calibrate()
+        .await
+        .unwrap();
     robot.compete().await;
 }

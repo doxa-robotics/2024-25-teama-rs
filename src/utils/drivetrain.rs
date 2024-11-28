@@ -3,7 +3,7 @@ use core::time::Duration;
 use vexide::{
     core::{dbg, println, time::Instant},
     devices::smart::{imu::InertialError, motor::MotorError},
-    prelude::{sleep, AdiAnalogIn, Float, InertialSensor, Motor, SmartDevice},
+    prelude::{sleep, Float, InertialSensor, Motor, SmartDevice},
 };
 
 use super::motor_group::MotorGroup;
@@ -66,7 +66,7 @@ pub enum DrivetrainError {
 pub struct Drivetrain {
     left: MotorGroup,
     right: MotorGroup,
-    gyro: AdiAnalogIn,
+    inertial: InertialSensor,
     config: DrivetrainConfig,
 }
 
@@ -75,13 +75,13 @@ impl Drivetrain {
     pub fn new(
         left: MotorGroup,
         right: MotorGroup,
-        gyro: AdiAnalogIn,
+        inertial: InertialSensor,
         config: DrivetrainConfig,
     ) -> Drivetrain {
         Drivetrain {
             left,
             right,
-            gyro,
+            inertial,
             config,
         }
     }
@@ -96,10 +96,10 @@ impl Drivetrain {
         &mut self.right
     }
 
-    /*/// Returns a mutable reference to the inertial sensor
+    /// Returns a mutable reference to the inertial sensor
     pub fn inertial(&mut self) -> &mut InertialSensor {
         &mut self.inertial
-    }*/
+    }
 
     /// Drive the robot for a certain distance
     ///
@@ -204,110 +204,7 @@ impl Drivetrain {
         Ok(())
     }
 
-    /// Drive the robot for a certain distance
-    ///
-    /// This method uses a PID controller to drive the robot for a certain distance. It is a blocking (async)
-    /// method, and will not return until the robot has driven the specified distance.
-    ///
-    /// # Arguments
-    ///
-    /// - `target_distance`: The distance to drive in mm
-    pub async fn broken_turn(&mut self, target_distance: f64) -> Result<(), DrivetrainError> {
-        // Get the initial position
-        self.left.reset_position().map_err(DrivetrainError::Motor)?;
-        self.right
-            .reset_position()
-            .map_err(DrivetrainError::Motor)?;
-
-        // since we just reset the position, the distance is 0 (in mm)
-        let mut left_distance: f64 = self
-            .left
-            .position()
-            .map_err(DrivetrainError::Motor)?
-            .as_revolutions()
-            * self.config.wheel_circumference;
-        let mut right_distance: f64 = self
-            .right
-            .position()
-            .map_err(DrivetrainError::Motor)?
-            .as_revolutions()
-            * self.config.wheel_circumference;
-        let mut left_velocity = self.left.velocity().map_err(DrivetrainError::Motor)?;
-        let mut right_velocity = self.right.velocity().map_err(DrivetrainError::Motor)?;
-
-        let mut left_controller: pid::Pid<f64> =
-            pid::Pid::new(target_distance, Motor::V5_MAX_VOLTAGE);
-        left_controller
-            .p(self.config.drive_p, f64::MAX)
-            .i(self.config.drive_i, f64::MAX)
-            .d(self.config.drive_d, f64::MAX);
-        let mut right_controller: pid::Pid<f64> =
-            pid::Pid::new(-target_distance, Motor::V5_MAX_VOLTAGE);
-        right_controller
-            .p(self.config.drive_p, f64::MAX)
-            .i(self.config.drive_i, f64::MAX)
-            .d(self.config.drive_d, f64::MAX);
-
-        let mut last_moving_instant = Instant::now();
-        while ((left_distance - target_distance).abs() >= self.config.drive_tolerance
-            || (right_distance - target_distance).abs() >= self.config.drive_tolerance)
-            || (left_velocity.abs() >= self.config.tolerance_velocity
-                || right_velocity.abs() >= self.config.tolerance_velocity)
-        {
-            // Get the current position
-            left_distance = self
-                .left
-                .position()
-                .map_err(DrivetrainError::Motor)?
-                .as_revolutions()
-                * self.config.wheel_circumference;
-            right_distance = self
-                .right
-                .position()
-                .map_err(DrivetrainError::Motor)?
-                .as_revolutions()
-                * self.config.wheel_circumference;
-
-            // Get the current velocity
-            left_velocity = self.left.velocity().map_err(DrivetrainError::Motor)?;
-            right_velocity = self.right.velocity().map_err(DrivetrainError::Motor)?;
-
-            if left_velocity.abs() > self.config.tolerance_velocity
-                || right_velocity.abs() > self.config.tolerance_velocity
-            {
-                last_moving_instant = Instant::now();
-            }
-            if last_moving_instant.elapsed() > self.config.timeout {
-                println!("Drivetrain.drive_for timed out");
-                break;
-            }
-
-            // Calculate the output
-            let left_output = left_controller.next_control_output(left_distance).output;
-            let right_output = right_controller.next_control_output(right_distance).output;
-
-            // Set the output
-            self.left
-                .set_voltage(left_output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
-                .map_err(DrivetrainError::Motor)?;
-            self.right
-                .set_voltage(right_output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
-                .map_err(DrivetrainError::Motor)?;
-
-            sleep(Motor::UPDATE_INTERVAL).await;
-        }
-
-        // brake the left and right motors
-        self.left
-            .brake(vexide::prelude::BrakeMode::Brake)
-            .map_err(DrivetrainError::Motor)?;
-        self.right
-            .brake(vexide::prelude::BrakeMode::Brake)
-            .map_err(DrivetrainError::Motor)?;
-        Ok(())
-    }
-
-    /*/// Turn the robot a certain angle
+    /// Turn the robot a certain angle
     ///
     /// This method uses a PID controller to turn the robot a certain angle. It is a blocking (async)
     /// method, and will not return until the robot has turned the specified distance.
@@ -317,7 +214,7 @@ impl Drivetrain {
     /// - `target_angle_delta`: The angle to turn by in radians
     pub async fn turn_for(&mut self, target_angle_delta: f64) -> Result<(), DrivetrainError> {
         // Get the initial position
-        self.gyro
+        self.inertial
             .set_heading(180.0 - target_angle_delta / 2.0)
             .map_err(DrivetrainError::Inertial)?;
         let mut real_heading = self.inertial.heading().map_err(DrivetrainError::Inertial)?;
@@ -341,17 +238,17 @@ impl Drivetrain {
         {
             // Get the current position
             real_heading = self.inertial.heading().map_err(DrivetrainError::Inertial)?;
-            heading = real_heading + heading_difference;
+            heading = real_heading - heading_difference;
             if real_heading > 300.0 {
                 self.inertial
                     .set_heading(real_heading - 200.0)
                     .map_err(DrivetrainError::Inertial)?;
-                heading_difference += 200.0;
+                heading_difference -= 200.0;
             } else if real_heading < 60.0 {
                 self.inertial
                     .set_heading(real_heading + 200.0)
                     .map_err(DrivetrainError::Inertial)?;
-                heading_difference -= 200.0;
+                heading_difference += 200.0;
             }
 
             // Get the current velocity
@@ -370,7 +267,7 @@ impl Drivetrain {
 
             // Calculate the output
             let output = controller.next_control_output(heading).output;
-            dbg!(heading, output);
+            dbg!(real_heading, heading, output);
 
             // Set the output
             self.left
@@ -391,5 +288,5 @@ impl Drivetrain {
             .brake(vexide::prelude::BrakeMode::Brake)
             .map_err(DrivetrainError::Motor)?;
         Ok(())
-    }*/
+    }
 }

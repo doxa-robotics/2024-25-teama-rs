@@ -13,7 +13,6 @@ impl AutonomousRoutine for Auton2 {
         devices: &'a mut RobotDevices,
     ) -> Box<dyn core::future::Future<Output = ()> + Unpin + 'a> {
         Box::new(Box::pin(async move {
-            let degree_90 = 240.0;
             devices.drivetrain.drive_for(650.0).await.ok();
             devices.clamp.set_high().ok();
             devices.intake.set_velocity(450).ok();
@@ -21,7 +20,7 @@ impl AutonomousRoutine for Auton2 {
             devices.intake.brake(BrakeMode::Brake).ok();
 
             devices.drivetrain.drive_for(-600.0).await.ok();
-            devices.drivetrain.broken_turn(degree_90 * 0.5).await.ok();
+            devices.drivetrain.turn_for(45.0).await.ok();
             devices.intake.set_velocity(450).ok();
             devices.drivetrain.drive_for(600.0).await.ok();
             sleep(Duration::from_secs(2)).await;

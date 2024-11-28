@@ -14,7 +14,7 @@ impl AutonomousRoutine for Auton1 {
     ) -> Box<dyn core::future::Future<Output = ()> + Unpin + 'a> {
         Box::new(Box::pin(async move {
             devices.drivetrain.drive_for(-290.0).await.ok();
-            devices.drivetrain.broken_turn(240.0).await.ok();
+            devices.drivetrain.turn_for(90.0).await.ok();
             devices.drivetrain.drive_for(-60.0).await.ok();
 
             // Place the ring on the stake
