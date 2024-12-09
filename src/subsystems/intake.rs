@@ -1,9 +1,13 @@
+use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::println,
+    core::time::Instant,
     devices::{smart::motor::MotorError, PortError},
     prelude::{AdiAnalogIn, BrakeMode, Direction, Motor},
 };
+
+const RING_THRESHOLD: u16 = 2500;
+const TIMEOUT: u128 = 3000;
 
 pub struct Intake {
     motor: Motor,
@@ -37,11 +41,19 @@ impl Intake {
     }
 
     pub fn partial_intake(&mut self) -> Result<(), IntakeError> {
-        let initial_value = self.line_tracker.value().context(LineTrackerPortSnafu)?;
-        println!("initial: {}", initial_value);
-        self.motor
-            .set_voltage(self.motor.max_voltage())
-            .context(MotorSnafu)?;
+        self.run(Direction::Forward)?;
+        let start = Instant::now();
+        loop {
+            let current_value = self.line_tracker.value().context(LineTrackerPortSnafu)?;
+            if current_value < RING_THRESHOLD {
+                break;
+            }
+            if start.elapsed().as_millis() > TIMEOUT {
+                error!("Partially intaking timeout");
+                break;
+            }
+        }
+        self.stop()?;
         Ok(())
     }
 
