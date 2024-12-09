@@ -16,6 +16,7 @@ use log::{error, info};
 use utils::{
     drivetrain::{Drivetrain, DrivetrainConfig},
     intake::Intake,
+    logger,
     motor_group::MotorGroup,
 };
 use vexide::{core::time::Instant, prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
@@ -55,6 +56,8 @@ impl Compete for Robot {
 
 #[vexide::main(banner(theme = THEME_OFFICIAL_LOGO))]
 async fn main(peripherals: Peripherals) {
+    logger::init().expect("failed to initialize logger");
+
     let mut robot = Robot {
         devices: RobotDevices {
             controller: peripherals.primary_controller,
