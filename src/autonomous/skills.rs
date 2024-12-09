@@ -14,9 +14,9 @@ impl AutonomousRoutine for Skills {
     ) -> Box<dyn core::future::Future<Output = ()> + Unpin + 'a> {
         Box::new(Box::pin(async move {
             // Place the ring on the stake
-            devices.intake.set_velocity(450).ok();
+            devices.intake.run(vexide::prelude::Direction::Forward).ok();
             sleep(Duration::from_secs(2)).await;
-            devices.intake.brake(vexide::prelude::BrakeMode::Brake).ok();
+            devices.intake.stop().ok();
         }))
     }
 

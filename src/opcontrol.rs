@@ -1,8 +1,8 @@
-use core::{fmt::Display, time::Duration};
+use core::time::Duration;
 
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    devices::{controller::ControllerError, smart::motor::MotorError, PortError},
+    devices::{controller::ControllerError, smart::motor::MotorError},
     prelude::*,
 };
 
@@ -26,8 +26,6 @@ pub enum OpcontrolError {
     Controller { source: ControllerError },
     #[snafu(display("intake error: {}", source))]
     Intake { source: IntakeError },
-    #[snafu(display("port error: {}", source))]
-    Port { source: PortError },
     #[snafu(display("motor error: {}", source))]
     Motor { source: MotorError },
     #[snafu(display("clamp error: {}", source))]

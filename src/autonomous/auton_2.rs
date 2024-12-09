@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
 use core::time::Duration;
 
-use vexide::prelude::{sleep, BrakeMode};
+use vexide::prelude::sleep;
 
 use crate::{autonomous::AutonomousRoutine, RobotDevices};
 
@@ -14,17 +14,17 @@ impl AutonomousRoutine for Auton2 {
     ) -> Box<dyn core::future::Future<Output = ()> + Unpin + 'a> {
         Box::new(Box::pin(async move {
             devices.drivetrain.drive_for(650.0).await.ok();
-            devices.clamp.set_high().ok();
-            devices.intake.set_velocity(450).ok();
+            devices.clamp.clamp().ok();
+            devices.intake.run(vexide::prelude::Direction::Forward).ok();
             sleep(Duration::from_secs(2)).await;
-            devices.intake.brake(BrakeMode::Brake).ok();
+            devices.intake.stop().ok();
 
             devices.drivetrain.drive_for(-600.0).await.ok();
             devices.drivetrain.turn_for(45.0).await.ok();
-            devices.intake.set_velocity(450).ok();
+            devices.intake.run(vexide::prelude::Direction::Forward).ok();
             devices.drivetrain.drive_for(600.0).await.ok();
             sleep(Duration::from_secs(2)).await;
-            devices.intake.brake(BrakeMode::Brake).ok();
+            devices.intake.stop().ok();
         }))
     }
 
