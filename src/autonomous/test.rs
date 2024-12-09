@@ -10,10 +10,7 @@ impl AutonomousRoutine for Test {
         devices: &'a mut RobotDevices,
     ) -> alloc::boxed::Box<(dyn core::future::Future<Output = ()> + Unpin + 'a)> {
         Box::new(Box::pin(async {
-            loop {
-                devices.drivetrain.turn_for(90.0).await.ok();
-                devices.drivetrain.drive_for(10.0).await.ok();
-            }
+            devices.drivetrain.drive_for(100.0).await.ok();
         }))
     }
 

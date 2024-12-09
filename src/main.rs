@@ -14,6 +14,7 @@ use core::{pin::pin, time::Duration};
 use autonomous::AutonomousRoutine;
 use utils::{
     drivetrain::{Drivetrain, DrivetrainConfig},
+    intake::Intake,
     motor_group::MotorGroup,
 };
 use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
@@ -23,8 +24,7 @@ struct RobotDevices {
 
     drivetrain: Drivetrain,
 
-    intake: Motor,
-    lift: Motor,
+    intake: Intake,
     clamp: AdiDigitalOut,
     doinker: AdiDigitalOut,
 }
@@ -53,8 +53,6 @@ impl Compete for Robot {
 
 #[vexide::main(banner(theme = THEME_OFFICIAL_LOGO))]
 async fn main(peripherals: Peripherals) {
-    let mut doinker = AdiDigitalOut::new(peripherals.adi_f);
-    doinker.set_low().unwrap();
     let mut robot = Robot {
         devices: RobotDevices {
             controller: peripherals.primary_controller,
@@ -94,10 +92,15 @@ async fn main(peripherals: Peripherals) {
                 },
             ),
 
+            intake: Intake::new(
+                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                AdiAnalogIn::new(peripherals.adi_b),
+            ),
             clamp: AdiDigitalOut::new(peripherals.adi_a),
-            doinker,
-            intake: Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-            lift: Motor::new(peripherals.port_21, Gearset::Blue, Direction::Forward), // TODO
+            doinker: AdiDigitalOut::with_initial_level(
+                peripherals.adi_f,
+                vexide::devices::adi::digital::LogicLevel::High,
+            ),
         },
         autonomous_routine: Box::new(autonomous::test::Test {}),
     };

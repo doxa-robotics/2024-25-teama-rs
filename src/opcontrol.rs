@@ -1,5 +1,6 @@
 use core::{fmt::Display, time::Duration};
 
+use snafu::Snafu;
 use vexide::{
     devices::{controller::ControllerError, smart::motor::MotorError, PortError},
     prelude::*,
@@ -16,28 +17,19 @@ fn curve_stick(input: f64) -> f64 {
     }
 }
 
+#[derive(Debug, Snafu)]
 pub enum OpcontrolError {
-    Controller(ControllerError),
-    Motor(MotorError),
-    Port(PortError),
-}
-
-impl Display for OpcontrolError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            OpcontrolError::Controller(err) => write!(f, "controller error: {}", err),
-            OpcontrolError::Motor(err) => write!(f, "motor error: {}", err),
-            OpcontrolError::Port(err) => write!(f, "port error: {}", err),
-        }
-    }
+    #[snafu(display("controller error: {}", source))]
+    Controller { source: ControllerError },
+    #[snafu(display("motor error: {}", source))]
+    Intake { source: IntakeError },
+    #[snafu(display("port error: {}", source))]
+    Port { source: PortError },
 }
 
 pub async fn opcontrol(devices: &mut RobotDevices) -> Result<!, OpcontrolError> {
     loop {
-        let state = devices
-            .controller
-            .state()
-            .map_err(OpcontrolError::Controller)?;
+        let state = devices.controller.state()?;
 
         let speed = curve_stick(state.left_stick.y());
         let turn = curve_stick(state.right_stick.x());
@@ -57,28 +49,19 @@ pub async fn opcontrol(devices: &mut RobotDevices) -> Result<!, OpcontrolError> 
             .map_err(OpcontrolError::Motor)?;
 
         if state.button_r1.is_pressed() {
-            devices
-                .intake
-                .set_velocity(600)
-                .map_err(OpcontrolError::Motor)?;
+            devices.intake.run(Direction::Forward)?;
         } else if state.button_l1.is_pressed() {
-            devices
-                .intake
-                .set_velocity(-600)
-                .map_err(OpcontrolError::Motor)?;
+            devices.intake.run(Direction::Reverse)?;
         } else {
-            devices
-                .intake
-                .brake(BrakeMode::Brake)
-                .map_err(OpcontrolError::Motor)?;
+            devices.intake.stop()?;
         }
 
         if state.button_a.is_now_pressed() {
-            devices.clamp.toggle().map_err(OpcontrolError::Port)?;
+            devices.clamp.toggle()?;
         }
 
         if state.button_b.is_now_pressed() {
-            devices.doinker.toggle().map_err(OpcontrolError::Port)?;
+            devices.doinker.toggle()?;
         }
 
         // TODO: lift control
