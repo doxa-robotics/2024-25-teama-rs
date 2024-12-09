@@ -1,9 +1,11 @@
-use log::error;
+use core::time::Duration;
+
+use log::{debug, error};
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::time::Instant,
-    devices::{smart::motor::MotorError, PortError},
-    prelude::{AdiAnalogIn, BrakeMode, Direction, Motor},
+    core::{println, time::Instant},
+    devices::{adi::ADI_UPDATE_INTERVAL, smart::motor::MotorError, PortError},
+    prelude::{sleep, AdiAnalogIn, BrakeMode, Direction, Motor},
 };
 
 const RING_THRESHOLD: u16 = 2500;
@@ -40,7 +42,7 @@ impl Intake {
         Ok(())
     }
 
-    pub fn partial_intake(&mut self) -> Result<(), IntakeError> {
+    pub async fn partial_intake(&mut self) -> Result<(), IntakeError> {
         self.run(Direction::Forward)?;
         let start = Instant::now();
         loop {
@@ -52,18 +54,24 @@ impl Intake {
                 error!("Partially intaking timeout");
                 break;
             }
+            sleep(ADI_UPDATE_INTERVAL).await;
         }
         self.stop()?;
         Ok(())
     }
 
     pub fn stop(&mut self) -> Result<(), IntakeError> {
-        self.motor.brake(BrakeMode::Coast).context(MotorSnafu)?;
+        let current_value = self.line_tracker.value().context(LineTrackerPortSnafu)?;
+        if current_value < RING_THRESHOLD {
+            self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
+        } else {
+            self.motor.set_voltage(0.0).context(MotorSnafu)?;
+        }
         Ok(())
     }
 
     pub fn hold(&mut self) -> Result<(), IntakeError> {
-        self.motor.brake(BrakeMode::Brake).context(MotorSnafu)?;
+        self.motor.set_voltage(0.0).context(MotorSnafu)?;
         Ok(())
     }
 }

@@ -7,7 +7,7 @@ edition = "2021"
 
 # These fields configure default behavior for uploads with `cargo v5`.
 [package.metadata.v5]
-slot = 3
+slot = 1
 icon = "cool-x"
 compress = true
 
@@ -18,4 +18,4 @@ snafu = { version = "0.8.5", default-features = false, features = [
     "rust_1_61",
     "unstable-core-error",
 ] }
-vexide = { git = "https://github.com/vexide/vexide.git", rev = "9cc8f8e32700f4941f78dd580942624098fcd9ba" }
+vexide = { git = "https://github.com/vexide/vexide.git", rev = "814c743a21474186b6e5cc09ccf3cde99c3b6bc2" }
