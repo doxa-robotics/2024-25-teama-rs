@@ -12,12 +12,13 @@ use alloc::{boxed::Box, vec};
 use core::{pin::pin, time::Duration};
 
 use autonomous::AutonomousRoutine;
+use log::{error, info};
 use utils::{
     drivetrain::{Drivetrain, DrivetrainConfig},
     intake::Intake,
     motor_group::MotorGroup,
 };
-use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
+use vexide::{core::time::Instant, prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 
 struct RobotDevices {
     controller: Controller,
@@ -36,17 +37,18 @@ struct Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
-        println!("Autonomous!");
+        info!("Autonomous starting");
+        let start = Instant::now();
         pin!(self.autonomous_routine.run(&mut self.devices)).await;
-        println!("Autonomous done!");
+        info!("Autonomous finished in {}ms", start.elapsed().as_millis());
     }
 
     async fn driver(&mut self) {
-        println!("Driver started");
+        info!("Driver starting");
 
         loop {
             let Err(err) = opcontrol::opcontrol(&mut self.devices).await;
-            println!("opcontrol crashed, restarting! {}", err);
+            error!("opcontrol crashed, restarting! {}", err);
         }
     }
 }
@@ -105,7 +107,7 @@ async fn main(peripherals: Peripherals) {
         autonomous_routine: Box::new(autonomous::test::Test {}),
     };
 
-    println!("competing");
+    info!("competing");
     robot
         .devices
         .drivetrain
