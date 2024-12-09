@@ -6,6 +6,7 @@ extern crate alloc;
 
 mod autonomous;
 mod opcontrol;
+mod subsystems;
 mod utils;
 
 use alloc::{boxed::Box, vec};
@@ -13,12 +14,13 @@ use core::{pin::pin, time::Duration};
 
 use autonomous::AutonomousRoutine;
 use log::{error, info};
-use utils::{
+use subsystems::{
+    clamp::Clamp,
+    doinker::Doinker,
     drivetrain::{Drivetrain, DrivetrainConfig},
     intake::Intake,
-    logger,
-    motor_group::MotorGroup,
 };
+use utils::{logger, motor_group::MotorGroup};
 use vexide::{core::time::Instant, prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 
 struct RobotDevices {
@@ -27,8 +29,8 @@ struct RobotDevices {
     drivetrain: Drivetrain,
 
     intake: Intake,
-    clamp: AdiDigitalOut,
-    doinker: AdiDigitalOut,
+    clamp: Clamp,
+    doinker: Doinker,
 }
 
 struct Robot {
@@ -101,11 +103,11 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
                 AdiAnalogIn::new(peripherals.adi_b),
             ),
-            clamp: AdiDigitalOut::new(peripherals.adi_a),
-            doinker: AdiDigitalOut::with_initial_level(
+            clamp: Clamp::new(AdiDigitalOut::new(peripherals.adi_a)),
+            doinker: Doinker::new(AdiDigitalOut::with_initial_level(
                 peripherals.adi_f,
                 vexide::devices::adi::digital::LogicLevel::High,
-            ),
+            )),
         },
         autonomous_routine: Box::new(autonomous::test::Test {}),
     };

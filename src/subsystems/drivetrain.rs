@@ -1,13 +1,13 @@
 use core::time::Duration;
 
-use snafu::Snafu;
+use snafu::{ResultExt, Snafu};
 use vexide::{
     core::{dbg, println, time::Instant},
     devices::smart::{imu::InertialError, motor::MotorError},
     prelude::{sleep, Float, InertialSensor, Motor, SmartDevice},
 };
 
-use super::motor_group::MotorGroup;
+use super::super::utils::motor_group::MotorGroup;
 
 #[derive(Debug, Snafu)]
 pub enum DrivetrainError {
@@ -112,24 +112,16 @@ impl Drivetrain {
     /// - `target_distance`: The distance to drive in mm
     pub async fn drive_for(&mut self, target_distance: f64) -> Result<(), DrivetrainError> {
         // Get the initial position
-        self.left.reset_position()?;
-        self.right.reset_position()?;
+        self.left.reset_position().context(MotorSnafu)?;
+        self.right.reset_position().context(MotorSnafu)?;
 
         // since we just reset the position, the distance is 0 (in mm)
-        let mut left_distance: f64 = self
-            .left
-            .position()
-            .map_err(DrivetrainError::Motor)?
-            .as_revolutions()
+        let mut left_distance: f64 = self.left.position().context(MotorSnafu)?.as_revolutions()
             * self.config.wheel_circumference;
-        let mut right_distance: f64 = self
-            .right
-            .position()
-            .map_err(DrivetrainError::Motor)?
-            .as_revolutions()
+        let mut right_distance: f64 = self.right.position().context(MotorSnafu)?.as_revolutions()
             * self.config.wheel_circumference;
-        let mut left_velocity = self.left.velocity()?;
-        let mut right_velocity = self.right.velocity()?;
+        let mut left_velocity = self.left.velocity().context(MotorSnafu)?;
+        let mut right_velocity = self.right.velocity().context(MotorSnafu)?;
 
         let mut left_controller: pid::Pid<f64> =
             pid::Pid::new(target_distance, Motor::V5_MAX_VOLTAGE);
@@ -151,22 +143,14 @@ impl Drivetrain {
                 || right_velocity.abs() >= self.config.tolerance_velocity)
         {
             // Get the current position
-            left_distance = self
-                .left
-                .position()
-                .map_err(DrivetrainError::Motor)?
-                .as_revolutions()
+            left_distance = self.left.position().context(MotorSnafu)?.as_revolutions()
                 * self.config.wheel_circumference;
-            right_distance = self
-                .right
-                .position()
-                .map_err(DrivetrainError::Motor)?
-                .as_revolutions()
+            right_distance = self.right.position().context(MotorSnafu)?.as_revolutions()
                 * self.config.wheel_circumference;
 
             // Get the current velocity
-            left_velocity = self.left.velocity()?;
-            right_velocity = self.right.velocity()?;
+            left_velocity = self.left.velocity().context(MotorSnafu)?;
+            right_velocity = self.right.velocity().context(MotorSnafu)?;
 
             if left_velocity.abs() > self.config.tolerance_velocity
                 || right_velocity.abs() > self.config.tolerance_velocity
@@ -184,16 +168,22 @@ impl Drivetrain {
 
             // Set the output
             self.left
-                .set_voltage(left_output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))?;
+                .set_voltage(left_output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+                .context(MotorSnafu)?;
             self.right
-                .set_voltage(right_output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))?;
+                .set_voltage(right_output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+                .context(MotorSnafu)?;
 
             sleep(Motor::UPDATE_INTERVAL).await;
         }
 
         // brake the left and right motors
-        self.left.brake(vexide::prelude::BrakeMode::Brake)?;
-        self.right.brake(vexide::prelude::BrakeMode::Brake)?;
+        self.left
+            .brake(vexide::prelude::BrakeMode::Hold)
+            .context(MotorSnafu)?;
+        self.right
+            .brake(vexide::prelude::BrakeMode::Hold)
+            .context(MotorSnafu)?;
         Ok(())
     }
 
@@ -209,14 +199,14 @@ impl Drivetrain {
         // Get the initial position
         self.inertial
             .set_heading(180.0 - target_angle_delta / 2.0)
-            .map_err(DrivetrainError::Inertial)?;
-        let mut real_heading = self.inertial.heading().map_err(DrivetrainError::Inertial)?;
+            .context(InertialSnafu)?;
+        let mut real_heading = self.inertial.heading().context(InertialSnafu)?;
         let target_heading = real_heading + target_angle_delta;
         let mut heading = real_heading;
         let mut heading_difference = 0.0;
 
-        let mut left_velocity = self.left.velocity()?;
-        let mut right_velocity = self.right.velocity()?;
+        let mut left_velocity = self.left.velocity().context(MotorSnafu)?;
+        let mut right_velocity = self.right.velocity().context(MotorSnafu)?;
 
         let mut controller: pid::Pid<f64> = pid::Pid::new(target_heading, Motor::V5_MAX_VOLTAGE);
         controller
@@ -230,23 +220,23 @@ impl Drivetrain {
                 || right_velocity.abs() >= self.config.tolerance_velocity)
         {
             // Get the current position
-            real_heading = self.inertial.heading().map_err(DrivetrainError::Inertial)?;
+            real_heading = self.inertial.heading().context(InertialSnafu)?;
             heading = real_heading - heading_difference;
             if real_heading > 300.0 {
                 self.inertial
                     .set_heading(real_heading - 200.0)
-                    .map_err(DrivetrainError::Inertial)?;
+                    .context(InertialSnafu)?;
                 heading_difference -= 200.0;
             } else if real_heading < 60.0 {
                 self.inertial
                     .set_heading(real_heading + 200.0)
-                    .map_err(DrivetrainError::Inertial)?;
+                    .context(InertialSnafu)?;
                 heading_difference += 200.0;
             }
 
             // Get the current velocity
-            left_velocity = self.left.velocity()?;
-            right_velocity = self.right.velocity()?;
+            left_velocity = self.left.velocity().context(MotorSnafu)?;
+            right_velocity = self.right.velocity().context(MotorSnafu)?;
 
             if left_velocity.abs() > self.config.tolerance_velocity
                 || right_velocity.abs() > self.config.tolerance_velocity
@@ -264,16 +254,22 @@ impl Drivetrain {
 
             // Set the output
             self.left
-                .set_voltage(output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))?;
+                .set_voltage(output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+                .context(MotorSnafu)?;
             self.right
-                .set_voltage(-output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))?;
+                .set_voltage(-output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+                .context(MotorSnafu)?;
 
             sleep(Motor::UPDATE_INTERVAL).await;
         }
 
         // brake the left and right motors
-        self.left.brake(vexide::prelude::BrakeMode::Brake)?;
-        self.right.brake(vexide::prelude::BrakeMode::Brake)?;
+        self.left
+            .brake(vexide::prelude::BrakeMode::Hold)
+            .context(MotorSnafu)?;
+        self.right
+            .brake(vexide::prelude::BrakeMode::Hold)
+            .context(MotorSnafu)?;
         Ok(())
     }
 }

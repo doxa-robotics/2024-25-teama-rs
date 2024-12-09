@@ -1,3 +1,4 @@
+use snafu::{ResultExt, Snafu};
 use vexide::{
     core::println,
     devices::{smart::motor::MotorError, PortError},
@@ -26,27 +27,31 @@ impl Intake {
     }
 
     pub fn run(&mut self, direction: Direction) -> Result<(), IntakeError> {
-        self.motor.set_voltage(match direction {
-            Direction::Forward => self.motor.max_voltage(),
-            Direction::Reverse => -self.motor.max_voltage(),
-        })?;
+        self.motor
+            .set_voltage(match direction {
+                Direction::Forward => self.motor.max_voltage(),
+                Direction::Reverse => -self.motor.max_voltage(),
+            })
+            .context(MotorSnafu)?;
         Ok(())
     }
 
     pub fn partial_intake(&mut self) -> Result<(), IntakeError> {
-        let initial_value = self.line_tracker.value()?;
+        let initial_value = self.line_tracker.value().context(LineTrackerPortSnafu)?;
         println!("initial: {}", initial_value);
-        self.motor.set_voltage(self.motor.max_voltage())?;
+        self.motor
+            .set_voltage(self.motor.max_voltage())
+            .context(MotorSnafu)?;
         Ok(())
     }
 
     pub fn stop(&mut self) -> Result<(), IntakeError> {
-        self.motor.brake(BrakeMode::Coast)?;
+        self.motor.brake(BrakeMode::Coast).context(MotorSnafu)?;
         Ok(())
     }
 
     pub fn hold(&mut self) -> Result<(), IntakeError> {
-        self.motor.brake(BrakeMode::Brake)?;
+        self.motor.brake(BrakeMode::Brake).context(MotorSnafu)?;
         Ok(())
     }
 }

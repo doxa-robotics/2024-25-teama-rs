@@ -14,5 +14,8 @@ compress = true
 [dependencies]
 log = "0.4.22"
 pid = "4.0.0"
-snafu = "0.8.5"
+snafu = { version = "0.8.5", default-features = false, features = [
+    "rust_1_61",
+    "unstable-core-error",
+] }
 vexide = { git = "https://github.com/vexide/vexide.git", rev = "9cc8f8e32700f4941f78dd580942624098fcd9ba" }

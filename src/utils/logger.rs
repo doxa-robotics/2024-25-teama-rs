@@ -1,11 +1,11 @@
-use log::{Level, Metadata, Record};
-use vexide::prelude::Write;
+use log::{Level, Metadata, Record, SetLoggerError};
+use vexide::{core::println, prelude::Write};
 
 struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Info
+        metadata.level() <= Level::Debug
     }
 
     fn log(&self, record: &Record) {
@@ -22,5 +22,5 @@ impl log::Log for SimpleLogger {
 static LOGGER: SimpleLogger = SimpleLogger;
 
 pub fn init() -> Result<(), SetLoggerError> {
-    log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info))
+    log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::Debug))
 }
