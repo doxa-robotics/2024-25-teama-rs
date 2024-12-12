@@ -7,7 +7,7 @@ use vexide::{
 };
 
 use crate::{
-    subsystems::{clamp::ClampError, doinker::DoinkerError, intake::IntakeError},
+    subsystems::{arm::ArmError, clamp::ClampError, doinker::DoinkerError, intake::IntakeError},
     RobotDevices,
 };
 
@@ -32,6 +32,8 @@ pub enum OpcontrolError {
     Clamp { source: ClampError },
     #[snafu(display("doinker error: {}", source))]
     Doinker { source: DoinkerError },
+    #[snafu(display("arm error: {}", source))]
+    Arm { source: ArmError },
 }
 
 pub async fn opcontrol(devices: &mut RobotDevices) -> Result<!, OpcontrolError> {
@@ -67,6 +69,14 @@ pub async fn opcontrol(devices: &mut RobotDevices) -> Result<!, OpcontrolError> 
                 .context(IntakeSnafu)?;
         } else {
             devices.intake.stop().context(IntakeSnafu)?;
+        }
+
+        if state.button_r2.is_pressed() {
+            devices.arm.run(Direction::Forward).context(ArmSnafu)?;
+        } else if state.button_l2.is_pressed() {
+            devices.arm.run(Direction::Reverse).context(ArmSnafu)?;
+        } else {
+            devices.arm.stop().context(ArmSnafu)?;
         }
 
         if state.button_a.is_now_pressed() {

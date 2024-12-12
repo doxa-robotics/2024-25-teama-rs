@@ -15,6 +15,7 @@ use core::{pin::pin, time::Duration};
 use autonomous::AutonomousRoutine;
 use log::{error, info};
 use subsystems::{
+    arm::Arm,
     clamp::Clamp,
     doinker::Doinker,
     drivetrain::{Drivetrain, DrivetrainConfig},
@@ -31,6 +32,7 @@ struct RobotDevices {
     intake: Intake,
     clamp: Clamp,
     doinker: Doinker,
+    arm: Arm,
 }
 
 struct Robot {
@@ -108,6 +110,10 @@ async fn main(peripherals: Peripherals) {
                 peripherals.adi_f,
                 vexide::devices::adi::digital::LogicLevel::High,
             )),
+            arm: Arm::new(MotorGroup::new(vec![
+                Motor::new_exp(peripherals.port_2, Direction::Forward),
+                Motor::new_exp(peripherals.port_3, Direction::Reverse),
+            ])),
         },
         autonomous_routine: Box::new(autonomous::test::Test {}),
     };

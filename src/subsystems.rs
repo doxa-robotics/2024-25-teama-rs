@@ -1,3 +1,4 @@
+pub mod arm;
 pub mod clamp;
 pub mod doinker;
 pub mod drivetrain;

@@ -1,9 +1,7 @@
-use core::time::Duration;
-
-use log::{debug, error};
+use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{println, time::Instant},
+    core::time::Instant,
     devices::{adi::ADI_UPDATE_INTERVAL, smart::motor::MotorError, PortError},
     prelude::{sleep, AdiAnalogIn, BrakeMode, Direction, Motor},
 };
@@ -67,11 +65,6 @@ impl Intake {
         } else {
             self.motor.set_voltage(0.0).context(MotorSnafu)?;
         }
-        Ok(())
-    }
-
-    pub fn hold(&mut self) -> Result<(), IntakeError> {
-        self.motor.set_voltage(0.0).context(MotorSnafu)?;
         Ok(())
     }
 }
