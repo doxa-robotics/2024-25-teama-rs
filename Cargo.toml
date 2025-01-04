@@ -18,4 +18,6 @@ snafu = { version = "0.8.5", default-features = false, features = [
     "rust_1_61",
     "unstable-core-error",
 ] }
-vexide = { git = "https://github.com/vexide/vexide.git", rev = "814c743a21474186b6e5cc09ccf3cde99c3b6bc2" }
+async-trait = "0.1.83"
+doxa-selector = { git = "https://github.com/doxa-robotics/doxa-selector-rs.git", branch = "main" }
+vexide = "0.5.2"

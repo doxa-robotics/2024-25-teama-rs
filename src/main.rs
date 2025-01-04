@@ -9,10 +9,10 @@ mod opcontrol;
 mod subsystems;
 mod utils;
 
-use alloc::{boxed::Box, vec};
-use core::{pin::pin, time::Duration};
+use alloc::{string::ToString, vec};
+use core::time::Duration;
 
-use autonomous::AutonomousRoutine;
+use doxa_selector::{CompeteWithSelector, CompeteWithSelectorExt};
 use log::{error, info};
 use subsystems::{
     arm::Arm,
@@ -22,9 +22,9 @@ use subsystems::{
     intake::Intake,
 };
 use utils::{logger, motor_group::MotorGroup};
-use vexide::{core::time::Instant, prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
+use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 
-struct RobotDevices {
+struct Robot {
     controller: Controller,
 
     drivetrain: Drivetrain,
@@ -35,26 +35,62 @@ struct RobotDevices {
     arm: Arm,
 }
 
-struct Robot {
-    devices: RobotDevices,
-    autonomous_routine: Box<dyn AutonomousRoutine>,
-}
+impl CompeteWithSelector for Robot {
+    type Category = autonomous::Category;
+    type Return = autonomous::Return;
 
-impl Compete for Robot {
-    async fn autonomous(&mut self) {
-        info!("Autonomous starting");
-        let start = Instant::now();
-        pin!(self.autonomous_routine.run(&mut self.devices)).await;
-        info!("Autonomous finished in {}ms", start.elapsed().as_millis());
+    fn autonomous_routes<'a, 'b>(
+        &'b self,
+    ) -> alloc::collections::btree_map::BTreeMap<
+        Self::Category,
+        impl AsRef<[&'a dyn doxa_selector::AutonRoutine<Self, Return = Self::Return>]>,
+    >
+    where
+        Self: 'a,
+    {
+        autonomous::autonomous_routes()
     }
 
     async fn driver(&mut self) {
         info!("Driver starting");
 
         loop {
-            let Err(err) = opcontrol::opcontrol(&mut self.devices).await;
+            let Err(err) = opcontrol::opcontrol(self).await;
             error!("opcontrol crashed, restarting! {}", err);
         }
+    }
+
+    fn calibrate_gyro(&mut self) {
+        self.drivetrain.calibrate_inertial();
+    }
+
+    fn is_gyro_calibrating(&self) -> bool {
+        self.drivetrain.is_inertial_calibrating()
+    }
+
+    fn diagnostics(&self) -> vec::Vec<(alloc::string::String, alloc::string::String)> {
+        vec![
+            (
+                "Gyro".to_string(),
+                if self.drivetrain.is_inertial_calibrating() {
+                    "Calibrating".to_string()
+                } else {
+                    self.drivetrain.inertial_heading().to_string()
+                },
+            ),
+            (
+                "Drivetrain temp (C)".to_string(),
+                self.drivetrain.temperature().to_string(),
+            ),
+            (
+                "Arm temp (C)".to_string(),
+                self.arm.temperature().to_string(),
+            ),
+            (
+                "Intake temp (C)".to_string(),
+                self.intake.temperature().to_string(),
+            ),
+        ]
     }
 }
 
@@ -62,69 +98,60 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     logger::init().expect("failed to initialize logger");
 
-    let mut robot = Robot {
-        devices: RobotDevices {
-            controller: peripherals.primary_controller,
+    let robot = Robot {
+        controller: peripherals.primary_controller,
 
-            drivetrain: Drivetrain::new(
-                MotorGroup::from_ports(
-                    vec![
-                        (peripherals.port_12, true),
-                        (peripherals.port_14, true),
-                        (peripherals.port_16, true),
-                    ],
-                    Gearset::Blue,
-                ),
-                MotorGroup::from_ports(
-                    vec![
-                        (peripherals.port_7, false),
-                        (peripherals.port_8, false),
-                        (peripherals.port_17, false),
-                    ],
-                    Gearset::Blue,
-                ),
-                InertialSensor::new(peripherals.port_18),
-                DrivetrainConfig {
-                    drive_p: 0.3,
-                    drive_i: 0.0,
-                    drive_d: 0.0,
-                    drive_tolerance: 5.0,
-
-                    turning_p: 0.3,
-                    turning_i: 0.001,
-                    turning_d: 0.1,
-                    turning_tolerance: 3.0,
-
-                    tolerance_velocity: 5.0,
-                    timeout: Duration::from_secs(3),
-                    wheel_circumference: 165.0,
-                },
+        drivetrain: Drivetrain::new(
+            MotorGroup::from_ports(
+                vec![
+                    (peripherals.port_12, true),
+                    (peripherals.port_14, true),
+                    (peripherals.port_16, true),
+                ],
+                Gearset::Blue,
             ),
-
-            intake: Intake::new(
-                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-                AdiAnalogIn::new(peripherals.adi_b),
+            MotorGroup::from_ports(
+                vec![
+                    (peripherals.port_7, false),
+                    (peripherals.port_8, false),
+                    (peripherals.port_17, false),
+                ],
+                Gearset::Blue,
             ),
-            clamp: Clamp::new(AdiDigitalOut::new(peripherals.adi_a)),
-            doinker: Doinker::new(AdiDigitalOut::with_initial_level(
-                peripherals.adi_f,
-                vexide::devices::adi::digital::LogicLevel::High,
-            )),
-            arm: Arm::new(MotorGroup::new(vec![
+            InertialSensor::new(peripherals.port_18),
+            DrivetrainConfig {
+                drive_p: 0.3,
+                drive_i: 0.0,
+                drive_d: 0.0,
+                drive_tolerance: 5.0,
+
+                turning_p: 0.3,
+                turning_i: 0.001,
+                turning_d: 0.1,
+                turning_tolerance: 3.0,
+
+                tolerance_velocity: 5.0,
+                timeout: Duration::from_secs(3),
+                wheel_circumference: 165.0,
+            },
+        ),
+
+        intake: Intake::new(
+            Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+            AdiAnalogIn::new(peripherals.adi_b),
+        ),
+        clamp: Clamp::new(AdiDigitalOut::new(peripherals.adi_a)),
+        doinker: Doinker::new(AdiDigitalOut::new(peripherals.adi_f)),
+        arm: Arm::new(
+            MotorGroup::new(vec![
                 Motor::new_exp(peripherals.port_2, Direction::Forward),
                 Motor::new_exp(peripherals.port_3, Direction::Reverse),
-            ])),
-        },
-        autonomous_routine: Box::new(autonomous::test::Test {}),
+            ]),
+            RotationSensor::new(peripherals.port_9, Direction::Forward),
+        )
+        .expect("failed to initialize arm"),
     };
 
     info!("competing");
-    robot
-        .devices
-        .drivetrain
-        .inertial()
-        .calibrate()
-        .await
-        .unwrap();
-    robot.compete().await;
+    robot.compete_with_selector(peripherals.display).await;
 }

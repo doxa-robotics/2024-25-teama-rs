@@ -1,38 +1,39 @@
 use alloc::boxed::Box;
 use core::time::Duration;
 
+use async_trait::async_trait;
+use doxa_selector::AutonRoutine;
 use vexide::prelude::sleep;
 
-use crate::{autonomous::AutonomousRoutine, RobotDevices};
+use crate::Robot;
 
 pub struct Auton2;
 
-impl AutonomousRoutine for Auton2 {
-    fn run<'a>(
-        &'a self,
-        devices: &'a mut RobotDevices,
-    ) -> Box<dyn core::future::Future<Output = ()> + Unpin + 'a> {
-        Box::new(Box::pin(async move {
-            devices.drivetrain.drive_for(650.0).await.ok();
-            devices.clamp.clamp().ok();
-            devices.intake.run(vexide::prelude::Direction::Forward).ok();
-            sleep(Duration::from_secs(2)).await;
-            devices.intake.stop().ok();
+#[async_trait]
+impl AutonRoutine<Robot> for Auton2 {
+    type Return = super::Return;
 
-            devices.drivetrain.drive_for(-600.0).await.ok();
-            devices.drivetrain.turn_for(45.0).await.ok();
-            devices.intake.run(vexide::prelude::Direction::Forward).ok();
-            devices.drivetrain.drive_for(600.0).await.ok();
-            sleep(Duration::from_secs(2)).await;
-            devices.intake.stop().ok();
-        }))
+    async fn run(&self, robot: &mut Robot) -> Self::Return {
+        robot.drivetrain.drive_for(650.0).await?;
+        robot.clamp.clamp()?;
+        robot.intake.run(vexide::prelude::Direction::Forward);
+        sleep(Duration::from_secs(2)).await;
+        robot.intake.stop();
+
+        robot.drivetrain.drive_for(-600.0).await?;
+        robot.drivetrain.turn_for(45.0).await?;
+        robot.intake.run(vexide::prelude::Direction::Forward);
+        robot.drivetrain.drive_for(600.0).await?;
+        sleep(Duration::from_secs(2)).await;
+        robot.intake.stop();
+        Ok(())
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Auton 1"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "An autonomous routine that drives forward, intakes a ring, then turns and puts it on a stake."
     }
 }

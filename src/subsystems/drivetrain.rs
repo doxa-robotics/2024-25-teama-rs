@@ -1,10 +1,11 @@
+use alloc::{rc::Rc, sync::Arc};
 use core::time::Duration;
 
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{dbg, println, time::Instant},
+    core::{dbg, println, sync::Mutex, time::Instant},
     devices::smart::{imu::InertialError, motor::MotorError},
-    prelude::{sleep, Float, InertialSensor, Motor, SmartDevice},
+    prelude::{sleep, spawn, Float, InertialSensor, Motor, SmartDevice},
 };
 
 use super::super::utils::motor_group::MotorGroup;
@@ -67,7 +68,7 @@ pub struct DrivetrainConfig {
 pub struct Drivetrain {
     left: MotorGroup,
     right: MotorGroup,
-    inertial: InertialSensor,
+    inertial: Arc<Mutex<InertialSensor>>,
     config: DrivetrainConfig,
 }
 
@@ -82,7 +83,7 @@ impl Drivetrain {
         Drivetrain {
             left,
             right,
-            inertial,
+            inertial: Arc::new(Mutex::new(inertial)),
             config,
         }
     }
@@ -97,9 +98,32 @@ impl Drivetrain {
         &mut self.right
     }
 
-    /// Returns a mutable reference to the inertial sensor
-    pub fn inertial(&mut self) -> &mut InertialSensor {
-        &mut self.inertial
+    /// Is the inertial sensor calibrating?
+    pub fn is_inertial_calibrating(&self) -> bool {
+        self.inertial
+            .try_lock()
+            .map(|inertial| inertial.is_calibrating().unwrap_or(false))
+            // assume yes if it's locked
+            .unwrap_or(true)
+    }
+
+    pub fn inertial_heading(&self) -> f64 {
+        self.inertial
+            .try_lock()
+            .map(|i| i.heading().unwrap_or(0.0))
+            .unwrap_or(0.0)
+    }
+
+    /// Calibrate the inertial sensor
+    pub fn calibrate_inertial(&mut self) {
+        let inertial = self.inertial.clone();
+        spawn(async move {
+            let mut inertial = inertial.lock().await;
+            if let Err(_) = inertial.calibrate().await {
+                _ = inertial.calibrate().await;
+            }
+        })
+        .detach();
     }
 
     /// Drive the robot for a certain distance
@@ -196,11 +220,13 @@ impl Drivetrain {
     ///
     /// - `target_angle_delta`: The angle to turn by in radians
     pub async fn turn_for(&mut self, target_angle_delta: f64) -> Result<(), DrivetrainError> {
+        let mut inertial = self.inertial.lock().await;
+
         // Get the initial position
-        self.inertial
+        inertial
             .set_heading(180.0 - target_angle_delta / 2.0)
             .context(InertialSnafu)?;
-        let mut real_heading = self.inertial.heading().context(InertialSnafu)?;
+        let mut real_heading = inertial.heading().context(InertialSnafu)?;
         let target_heading = real_heading + target_angle_delta;
         let mut heading = real_heading;
         let mut heading_difference = 0.0;
@@ -220,15 +246,15 @@ impl Drivetrain {
                 || right_velocity.abs() >= self.config.tolerance_velocity)
         {
             // Get the current position
-            real_heading = self.inertial.heading().context(InertialSnafu)?;
+            real_heading = inertial.heading().context(InertialSnafu)?;
             heading = real_heading - heading_difference;
             if real_heading > 300.0 {
-                self.inertial
+                inertial
                     .set_heading(real_heading - 200.0)
                     .context(InertialSnafu)?;
                 heading_difference -= 200.0;
             } else if real_heading < 60.0 {
-                self.inertial
+                inertial
                     .set_heading(real_heading + 200.0)
                     .context(InertialSnafu)?;
                 heading_difference += 200.0;
@@ -271,5 +297,14 @@ impl Drivetrain {
             .brake(vexide::prelude::BrakeMode::Hold)
             .context(MotorSnafu)?;
         Ok(())
+    }
+
+    pub fn temperature(&self) -> f64 {
+        let left_temp = self.left.temperature();
+        let right_temp = self.right.temperature();
+        if left_temp.is_err() || right_temp.is_err() {
+            return 0.0;
+        }
+        (left_temp.unwrap() + right_temp.unwrap()) / 2.0
     }
 }

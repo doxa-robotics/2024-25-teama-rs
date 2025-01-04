@@ -1,24 +1,26 @@
 use alloc::boxed::Box;
 
-use crate::{autonomous::AutonomousRoutine, RobotDevices};
+use async_trait::async_trait;
+use doxa_selector::AutonRoutine;
+
+use crate::Robot;
 
 pub struct Test;
 
-impl AutonomousRoutine for Test {
-    fn run<'a>(
-        &'a self,
-        devices: &'a mut RobotDevices,
-    ) -> alloc::boxed::Box<(dyn core::future::Future<Output = ()> + Unpin + 'a)> {
-        Box::new(Box::pin(async {
-            devices.intake.partial_intake().await.ok();
-        }))
+#[async_trait]
+impl AutonRoutine<Robot> for Test {
+    type Return = super::Return;
+
+    async fn run(&self, robot: &mut Robot) -> Self::Return {
+        robot.intake.partial_intake();
+        Ok(())
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Test"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "A test autonomous routine"
     }
 }

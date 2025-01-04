@@ -17,8 +17,8 @@ impl Doinker {
 
     pub fn toggle(&mut self) -> Result<(), DoinkerError> {
         match self.adi_out.level().context(DigitalPortSnafu)? {
-            vexide::devices::adi::digital::LogicLevel::Low => self.doink(),
-            vexide::devices::adi::digital::LogicLevel::High => self.undoink(),
+            vexide::devices::adi::digital::LogicLevel::Low => self.undoink(),
+            vexide::devices::adi::digital::LogicLevel::High => self.doink(),
         }
     }
 

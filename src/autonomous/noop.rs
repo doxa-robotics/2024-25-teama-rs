@@ -1,23 +1,25 @@
 use alloc::boxed::Box;
 
-use crate::{autonomous::AutonomousRoutine, RobotDevices};
+use async_trait::async_trait;
+use doxa_selector::AutonRoutine;
+
+use crate::Robot;
 
 pub struct Noop;
 
-impl AutonomousRoutine for Noop {
-    fn run(
-        &self,
-        _devices: &mut RobotDevices,
-    ) -> alloc::boxed::Box<(dyn core::future::Future<Output = ()> + Unpin)> {
-        // This routine does nothing
-        Box::new(Box::pin(async {}))
+#[async_trait]
+impl AutonRoutine<Robot> for Noop {
+    type Return = super::Return;
+
+    async fn run(&self, _robot: &mut Robot) -> Self::Return {
+        Ok(())
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Noop"
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "An autonomous routine that does nothing, generated using AI. Fancy!"
     }
 }
