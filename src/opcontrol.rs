@@ -44,7 +44,7 @@ pub enum OpcontrolError {
 
 pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
     loop {
-        let state = robot.controller.state().context(ControllerSnafu)?;
+        let state = devices.controller.state().unwrap_or_default();
 
         let speed = curve_stick(state.left_stick.y());
         let turn = curve_stick(state.right_stick.x());
