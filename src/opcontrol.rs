@@ -1,11 +1,7 @@
 use core::time::Duration;
 
 use snafu::{ResultExt, Snafu};
-use vexide::{
-    core::time::Instant,
-    devices::{controller::ControllerError, smart::motor::MotorError},
-    prelude::*,
-};
+use vexide::{core::time::Instant, devices::smart::motor::MotorError, prelude::*};
 
 use crate::{
     subsystems::{
@@ -28,8 +24,6 @@ fn curve_stick(input: f64) -> f64 {
 
 #[derive(Debug, Snafu)]
 pub enum OpcontrolError {
-    #[snafu(display("controller error: {}", source))]
-    Controller { source: ControllerError },
     #[snafu(display("intake error: {}", source))]
     Intake { source: IntakeError },
     #[snafu(display("motor error: {}", source))]
@@ -44,7 +38,7 @@ pub enum OpcontrolError {
 
 pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
     loop {
-        let state = devices.controller.state().unwrap_or_default();
+        let state = robot.controller.state().unwrap_or_default();
 
         let speed = curve_stick(state.left_stick.y());
         let turn = curve_stick(state.right_stick.x());
