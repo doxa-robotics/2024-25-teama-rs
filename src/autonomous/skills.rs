@@ -3,7 +3,7 @@ use core::time::Duration;
 
 use async_trait::async_trait;
 use doxa_selector::AutonRoutine;
-use vexide::prelude::sleep;
+use vexide::prelude::*;
 
 use crate::Robot;
 
@@ -15,9 +15,9 @@ impl AutonRoutine<Robot> for Skills {
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
         // Place the ring on the stake
-        robot.intake.run(vexide::prelude::Direction::Forward);
+        robot.intake.run(Direction::Forward).await;
         sleep(Duration::from_secs(2)).await;
-        robot.intake.stop();
+        robot.intake.stop().await;
         Ok(())
     }
 

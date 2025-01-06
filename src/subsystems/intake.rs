@@ -149,13 +149,6 @@ impl Intake {
         inner.state = IntakeState::Stop;
     }
 
-    pub async fn stop_if_running(&self) {
-        let mut inner = self.0.lock().await;
-        if matches!(inner.state, IntakeState::Forward | IntakeState::Reverse) {
-            inner.state = IntakeState::Stop;
-        }
-    }
-
     pub async fn partial_intake(&self) {
         let mut inner = self.0.lock().await;
         inner.state = IntakeState::PartialIntake {

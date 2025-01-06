@@ -3,7 +3,7 @@ use core::time::Duration;
 
 use async_trait::async_trait;
 use doxa_selector::AutonRoutine;
-use vexide::prelude::sleep;
+use vexide::prelude::*;
 
 use crate::Robot;
 
@@ -16,16 +16,16 @@ impl AutonRoutine<Robot> for Auton2 {
     async fn run(&self, robot: &mut Robot) -> Self::Return {
         robot.drivetrain.drive_for(650.0).await?;
         robot.clamp.clamp()?;
-        robot.intake.run(vexide::prelude::Direction::Forward);
+        robot.intake.run(Direction::Forward).await;
         sleep(Duration::from_secs(2)).await;
-        robot.intake.stop();
+        robot.intake.stop().await;
 
         robot.drivetrain.drive_for(-600.0).await?;
         robot.drivetrain.turn_for(45.0).await?;
-        robot.intake.run(vexide::prelude::Direction::Forward);
+        robot.intake.run(Direction::Forward).await;
         robot.drivetrain.drive_for(600.0).await?;
         sleep(Duration::from_secs(2)).await;
-        robot.intake.stop();
+        robot.intake.stop().await;
         Ok(())
     }
 

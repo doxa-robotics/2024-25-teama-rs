@@ -1,4 +1,4 @@
-use alloc::{rc::Rc, sync::Arc};
+use alloc::sync::Arc;
 use core::time::Duration;
 
 use snafu::{ResultExt, Snafu};
@@ -119,7 +119,7 @@ impl Drivetrain {
         let inertial = self.inertial.clone();
         spawn(async move {
             let mut inertial = inertial.lock().await;
-            if let Err(_) = inertial.calibrate().await {
+            if inertial.calibrate().await.is_err() {
                 _ = inertial.calibrate().await;
             }
         })
