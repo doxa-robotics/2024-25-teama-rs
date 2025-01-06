@@ -1,15 +1,10 @@
 use core::time::Duration;
 
 use snafu::{ResultExt, Snafu};
-use vexide::{core::time::Instant, devices::smart::motor::MotorError, prelude::*};
+use vexide::{devices::smart::motor::MotorError, prelude::*};
 
 use crate::{
-    subsystems::{
-        arm::{ArmError, ArmState},
-        clamp::ClampError,
-        doinker::DoinkerError,
-        intake::{IntakeError, IntakeState},
-    },
+    subsystems::{arm::ArmState, clamp::ClampError, doinker::DoinkerError, intake::IntakeState},
     Robot,
 };
 
@@ -24,16 +19,12 @@ fn curve_stick(input: f64) -> f64 {
 
 #[derive(Debug, Snafu)]
 pub enum OpcontrolError {
-    #[snafu(display("intake error: {}", source))]
-    Intake { source: IntakeError },
     #[snafu(display("motor error: {}", source))]
     Motor { source: MotorError },
     #[snafu(display("clamp error: {}", source))]
     Clamp { source: ClampError },
     #[snafu(display("doinker error: {}", source))]
     Doinker { source: DoinkerError },
-    #[snafu(display("arm error: {}", source))]
-    Arm { source: ArmError },
 }
 
 pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
@@ -58,41 +49,44 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             .context(MotorSnafu)?;
 
         if state.button_r1.is_pressed() {
-            if matches!(robot.arm.state, ArmState::Intake) {
-                if !matches!(robot.intake.state, IntakeState::ArmIntake { .. }) {
-                    robot.intake.arm_intake();
-                }
-            } else {
-                robot.intake.run(Direction::Forward);
-            }
+            robot.intake.run(Direction::Forward).await;
         } else if state.button_l1.is_pressed() {
-            robot.intake.run(Direction::Reverse);
+            robot.intake.run(Direction::Reverse).await;
         } else if matches!(
-            robot.intake.state,
+            robot.intake.state().await,
             IntakeState::ArmIntake { .. } | IntakeState::Forward | IntakeState::Reverse
         ) {
-            robot.intake.stop();
+            robot.intake.stop().await;
         }
         if state.button_y.is_now_pressed() {
-            robot.intake.partial_intake();
+            robot.intake.partial_intake().await;
         }
-        robot.intake.update().context(IntakeSnafu)?;
 
         if state.button_x.is_now_pressed() {
-            robot.arm.next_state();
-            if matches!(robot.arm.state, ArmState::Delay { .. }) {
-                robot.intake.state = IntakeState::ForwardUntil {
-                    end: Instant::now() + Duration::from_millis(500),
-                };
+            match robot.arm.state().await {
+                ArmState::Initial => robot.arm.set_state(ArmState::Intake).await,
+                ArmState::Intake => {
+                    let arm = robot.arm.clone();
+                    let intake = robot.intake.clone();
+                    spawn(async move {
+                        intake.run(Direction::Forward).await;
+                        sleep(Duration::from_millis(200)).await;
+                        arm.set_state(ArmState::MaxExpansion).await;
+                        sleep(Duration::from_millis(300)).await;
+                        intake.stop().await;
+                    })
+                    .detach();
+                }
+                ArmState::MaxExpansion => robot.arm.set_state(ArmState::Initial).await,
+                ArmState::Manual(_) => robot.arm.set_state(ArmState::Initial).await,
             }
         }
         if state.button_l2.is_pressed() {
-            robot.arm.state.add(2.0);
+            robot.arm.manual_add(2.0).await;
         }
         if state.button_r2.is_pressed() {
-            robot.arm.state.add(-2.0);
+            robot.arm.manual_add(-2.0).await;
         }
-        robot.arm.update().context(ArmSnafu)?;
 
         if state.button_a.is_now_pressed() {
             robot.clamp.toggle().context(ClampSnafu)?;

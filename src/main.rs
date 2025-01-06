@@ -152,6 +152,10 @@ async fn main(peripherals: Peripherals) {
         .expect("failed to initialize arm"),
     };
 
+    info!("starting subsystem background tasks");
+    robot.arm.spawn_update();
+    robot.intake.spawn_update();
+
     info!("competing");
     robot.compete_with_selector(peripherals.display).await;
 }
