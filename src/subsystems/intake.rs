@@ -1,14 +1,13 @@
-use alloc::sync::Arc;
+use core::time::Duration;
 
 use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{sync::Mutex, time::Instant},
+    core::time::Instant,
     devices::{smart::motor::MotorError, PortError},
-    prelude::{sleep, spawn, AdiLineTracker, BrakeMode, Direction, Motor},
+    prelude::{AdiAnalogIn, BrakeMode, Direction, Motor},
 };
 
-#[derive(Debug, Clone, Copy)]
 pub enum IntakeState {
     Forward,
     Reverse,
@@ -25,14 +24,14 @@ pub enum IntakeState {
     Stopped,
 }
 
-const RING_THRESHOLD: f64 = 0.4;
+const RING_THRESHOLD: u16 = 2500;
 const TIMEOUT: u128 = 3000;
 const ARM_INTAKE_SETTLING_TIME: u128 = 600;
 
 pub struct Intake {
-    motor: Arc<Mutex<Motor>>,
-    line_tracker: Arc<Mutex<AdiLineTracker>>,
-    state: Arc<Mutex<IntakeState>>,
+    motor: Motor,
+    line_tracker: AdiAnalogIn,
+    pub state: IntakeState,
 }
 
 #[derive(Debug, Snafu)]
@@ -44,139 +43,120 @@ pub enum IntakeError {
 }
 
 impl Intake {
-    pub fn new(motor: Motor, line_tracker: AdiLineTracker) -> Self {
+    pub fn new(motor: Motor, line_tracker: AdiAnalogIn) -> Self {
         Self {
-            motor: Arc::new(Mutex::new(motor)),
-            line_tracker: Arc::new(Mutex::new(line_tracker)),
-            state: Arc::new(Mutex::new(IntakeState::Stopped)),
+            motor,
+            line_tracker,
+            state: IntakeState::Stopped,
         }
     }
 
     pub fn temperature(&self) -> f64 {
-        self.motor
-            .try_lock()
-            .map(|m| m.temperature().unwrap_or(0.0))
-            .unwrap_or(0.0)
+        self.motor.temperature().unwrap_or(0.0)
     }
 
-    pub async fn state(&self) -> IntakeState {
-        (*self.state.lock().await).clone()
-    }
-
-    pub async fn set_state(&mut self, state: IntakeState) {
-        *self.state.lock().await = state;
-    }
-
-    pub async fn stop(&mut self) {
-        *self.state.lock().await = IntakeState::Stopped;
-    }
-
-    pub async fn partial_intake(&mut self) {
-        *self.state.lock().await = IntakeState::PartialIntake {
-            start: Instant::now(),
-        };
-    }
-
-    pub async fn arm_intake(&mut self) {
-        *self.state.lock().await = IntakeState::ArmIntake {
-            start: Instant::now(),
-            settling_start: None,
-        };
-    }
-
-    pub async fn run(&mut self, direction: Direction) {
-        *self.state.lock().await = match direction {
-            Direction::Forward => IntakeState::Forward,
-            Direction::Reverse => IntakeState::Reverse,
-        };
-    }
-
-    pub async fn run_until(&mut self, end: Instant) {
-        *self.state.lock().await = IntakeState::ForwardUntil { end };
-    }
-
-    fn update(
-        state: &mut IntakeState,
-        motor: &mut Motor,
-        line_tracker: &mut AdiLineTracker,
-    ) -> Result<(), IntakeError> {
-        let max_voltage = motor.max_voltage();
-        match state {
+    pub fn update(&mut self) -> Result<(), IntakeError> {
+        match self.state {
             IntakeState::Forward => {
-                motor.set_voltage(max_voltage).context(MotorSnafu)?;
+                self.motor
+                    .set_voltage(self.motor.max_voltage())
+                    .context(MotorSnafu)?;
             }
             IntakeState::Reverse => {
-                motor.set_voltage(-max_voltage).context(MotorSnafu)?;
+                self.motor
+                    .set_voltage(-self.motor.max_voltage())
+                    .context(MotorSnafu)?;
             }
-            IntakeState::PartialIntake { start } => {
+            IntakeState::PartialIntake { start }
+            | IntakeState::ArmIntake {
+                start,
+                settling_start: _,
+            } => {
+                if let IntakeState::ArmIntake {
+                    start: _,
+                    settling_start: Some(settling_start),
+                } = self.state
+                {
+                    if settling_start.elapsed().as_millis() > ARM_INTAKE_SETTLING_TIME {
+                        self.state = IntakeState::Stopped;
+                    }
+                    return Ok(());
+                }
                 if start.elapsed().as_millis() > TIMEOUT {
                     error!("Partially intaking timeout");
-                    *state = IntakeState::Stopped;
+                    self.state = IntakeState::Stopped;
                 } else {
-                    motor.set_voltage(max_voltage).context(MotorSnafu)?;
-                    let current_value =
-                        line_tracker.reflectivity().context(LineTrackerPortSnafu)?;
+                    self.motor
+                        .set_voltage(self.motor.max_voltage())
+                        .context(MotorSnafu)?;
+                    let current_value = self.line_tracker.value().context(LineTrackerPortSnafu)?;
                     if current_value < RING_THRESHOLD {
-                        *state = IntakeState::Stopped;
-                    }
-                }
-            }
-            IntakeState::ArmIntake {
-                start,
-                settling_start,
-            } => {
-                if let Some(settling_start) = settling_start {
-                    if settling_start.elapsed().as_millis() > ARM_INTAKE_SETTLING_TIME {
-                        *state = IntakeState::Stopped;
-                    }
-                } else if start.elapsed().as_millis() > TIMEOUT {
-                    error!("Arm intaking timeout");
-                    *state = IntakeState::Stopped;
-                } else {
-                    motor.set_voltage(max_voltage).context(MotorSnafu)?;
-                    let current_value =
-                        line_tracker.reflectivity().context(LineTrackerPortSnafu)?;
-                    if current_value < RING_THRESHOLD {
-                        *state = IntakeState::ArmIntake {
-                            start: *start,
-                            settling_start: Some(Instant::now()),
-                        };
+                        match self.state {
+                            IntakeState::PartialIntake { start: _ } => {
+                                self.state = IntakeState::Stopped;
+                            }
+                            IntakeState::ArmIntake {
+                                start,
+                                settling_start: _,
+                            } => {
+                                self.state = IntakeState::ArmIntake {
+                                    start,
+                                    settling_start: Some(Instant::now()),
+                                };
+                            }
+                            _ => unreachable!(),
+                        }
                     }
                 }
             }
             IntakeState::Stopped => {
-                let current_value = line_tracker.reflectivity().context(LineTrackerPortSnafu)?;
+                let current_value = self.line_tracker.value().context(LineTrackerPortSnafu)?;
                 if current_value < RING_THRESHOLD {
-                    motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
+                    self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
                 } else {
-                    motor.set_voltage(0.0).context(MotorSnafu)?;
+                    self.motor.set_voltage(0.0).context(MotorSnafu)?;
                 }
             }
             IntakeState::ForwardUntil { end } => {
-                if Instant::now() > *end {
-                    *state = IntakeState::Stopped;
+                if Instant::now() > end {
+                    self.state = IntakeState::Stopped;
                 } else {
-                    motor.set_voltage(max_voltage).context(MotorSnafu)?;
+                    self.motor
+                        .set_voltage(self.motor.max_voltage())
+                        .context(MotorSnafu)?;
                 }
             }
         }
         Ok(())
     }
 
-    pub fn spawn_update_thread(&self) {
-        let motor = self.motor.clone();
-        let line_tracker = self.line_tracker.clone();
-        let state = self.state.clone();
-        spawn(async move {
-            loop {
-                let mut motor = motor.lock().await;
-                let mut line_tracker = line_tracker.lock().await;
-                let mut state = state.lock().await;
-                if let Err(err) = Intake::update(&mut state, &mut motor, &mut line_tracker) {
-                    error!("Intake update error: {}", err);
-                }
-                sleep(super::SUBSYSTEM_UPDATE_PERIOD).await;
-            }
-        });
+    pub fn stop(&mut self) {
+        self.state = IntakeState::Stopped;
+    }
+
+    pub fn stop_if_running(&mut self) {
+        if matches!(self.state, IntakeState::Forward | IntakeState::Reverse) {
+            self.stop();
+        }
+    }
+
+    pub fn partial_intake(&mut self) {
+        self.state = IntakeState::PartialIntake {
+            start: Instant::now(),
+        };
+    }
+
+    pub fn arm_intake(&mut self) {
+        self.state = IntakeState::ArmIntake {
+            start: Instant::now(),
+            settling_start: None,
+        };
+    }
+
+    pub fn run(&mut self, direction: Direction) {
+        self.state = match direction {
+            Direction::Forward => IntakeState::Forward,
+            Direction::Reverse => IntakeState::Reverse,
+        };
     }
 }

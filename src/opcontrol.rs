@@ -59,7 +59,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
 
         if state.button_r1.is_pressed() {
             if matches!(robot.arm.state, ArmState::Intake) {
-                if !matches!(robot.intake.state().await, IntakeState::ArmIntake { .. }) {
+                if !matches!(robot.intake.state, IntakeState::ArmIntake { .. }) {
                     robot.intake.arm_intake();
                 }
             } else {
@@ -68,7 +68,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         } else if state.button_l1.is_pressed() {
             robot.intake.run(Direction::Reverse);
         } else if matches!(
-            robot.intake.state().await,
+            robot.intake.state,
             IntakeState::ArmIntake { .. } | IntakeState::Forward | IntakeState::Reverse
         ) {
             robot.intake.stop();
@@ -76,16 +76,14 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         if state.button_y.is_now_pressed() {
             robot.intake.partial_intake();
         }
+        robot.intake.update().context(IntakeSnafu)?;
 
         if state.button_x.is_now_pressed() {
             robot.arm.next_state();
             if matches!(robot.arm.state, ArmState::Delay { .. }) {
-                robot
-                    .intake
-                    .set_state(IntakeState::ForwardUntil {
-                        end: Instant::now() + Duration::from_millis(500),
-                    })
-                    .await;
+                robot.intake.state = IntakeState::ForwardUntil {
+                    end: Instant::now() + Duration::from_millis(500),
+                };
             }
         }
         if state.button_l2.is_pressed() {

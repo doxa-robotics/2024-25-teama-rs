@@ -16,7 +16,7 @@ impl AutonRoutine<Robot> for Skills {
     async fn run(&self, robot: &mut Robot) -> Self::Return {
         // Place the ring on the stake
         robot.intake.run(vexide::prelude::Direction::Forward);
-        sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_secs(2)).await;
         robot.intake.stop();
         Ok(())
     }
