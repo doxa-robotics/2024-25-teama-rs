@@ -1,11 +1,11 @@
-use alloc::boxed::Box;
+use alloc::{boxed::Box, sync::Arc};
 use core::{f64, time::Duration};
 
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::time::Instant,
+    core::{sync::Mutex, time::Instant},
     devices::smart::motor::MotorError,
-    prelude::{Direction, Motor, Position, RotationSensor},
+    prelude::{sleep, spawn, Direction, Motor, Position, RotationSensor},
 };
 
 use crate::utils::motor_group::MotorGroup;
@@ -52,10 +52,9 @@ impl ArmState {
 
 #[derive(Debug)]
 pub struct Arm {
-    motors: MotorGroup,
-    rotation: RotationSensor,
-    pid: pid::Pid<f64>,
-    pub state: ArmState,
+    motors: Arc<Mutex<MotorGroup>>,
+    rotation: Arc<Mutex<RotationSensor>>,
+    state: Arc<Mutex<ArmState>>,
 }
 
 #[derive(Debug, Snafu)]
@@ -75,26 +74,24 @@ impl Arm {
             .set_position(Position::from_degrees(ArmState::INITIAL_ARM_ANGLE))
             .context(RotationSensorSnafu)?;
 
-        let mut pid = pid::Pid::new(ArmState::Initial.angle(), Motor::EXP_MAX_VOLTAGE);
-        pid.p(0.2, f64::MAX);
-
         Ok(Self {
-            motors,
-            pid,
-            rotation: rotation_sensor,
-            state: ArmState::default(),
+            motors: Arc::new(Mutex::new(motors)),
+            rotation: Arc::new(Mutex::new(rotation_sensor)),
+            state: Arc::new(Mutex::new(ArmState::default())),
         })
     }
 
-    pub fn reset_rotation(&mut self) -> Result<(), ArmError> {
-        self.rotation
+    pub async fn reset_rotation(&self) -> Result<(), ArmError> {
+        let mut rotation = self.rotation.lock().await;
+        rotation
             .set_position(Position::from_degrees(ArmState::INITIAL_ARM_ANGLE))
             .context(RotationSensorSnafu)?;
         Ok(())
     }
 
-    pub fn next_state(&mut self) {
-        self.state = match self.state {
+    pub async fn next_state(&self) {
+        let mut state = self.state.lock().await;
+        *state = match *state {
             ArmState::Initial => ArmState::Intake,
             ArmState::Intake => ArmState::Delay {
                 instant: Instant::now() + Duration::from_millis(200),
@@ -107,25 +104,60 @@ impl Arm {
         };
     }
 
-    pub fn update(&mut self) -> Result<(), ArmError> {
-        if matches!(self.state, ArmState::Delay { instant, .. } if instant < Instant::now()) {
-            self.state = match &self.state {
+    pub async fn update(&self) -> Result<(), ArmError> {
+        let mut state = self.state.lock().await;
+        if matches!(*state, ArmState::Delay { instant, .. } if instant < Instant::now()) {
+            *state = match &*state {
                 ArmState::Delay { target, .. } => *target.clone(),
                 _ => unreachable!(),
             };
         }
-        self.pid.setpoint = self.state.angle();
-        let current_angle = self
-            .rotation
-            .position()
-            .context(RotationSensorSnafu)?
-            .as_degrees();
-        let output = self.pid.next_control_output(current_angle);
-        self.motors.set_voltage(output.output).context(MotorSnafu)?;
         Ok(())
     }
 
-    pub fn temperature(&self) -> f64 {
-        self.motors.temperature().unwrap_or(0.0)
+    pub async fn get_state(&self) -> ArmState {
+        let state = self.state.lock().await;
+        state.clone()
+    }
+
+    pub async fn set_state(&self, new_state: ArmState) {
+        let mut state = self.state.lock().await;
+        *state = new_state;
+    }
+
+    pub fn spawn_update_thread(&self) {
+        let rotation = self.rotation.clone();
+        let motors = self.motors.clone();
+        let state = self.state.clone();
+
+        spawn(async move {
+            let mut pid = pid::Pid::new(ArmState::Initial.angle(), Motor::EXP_MAX_VOLTAGE);
+            pid.p(0.2, f64::MAX);
+
+            loop {
+                let state = state.lock().await;
+                let rotation = rotation.lock().await;
+                let motors = motors.lock().await;
+
+                pid.setpoint = state.angle();
+
+                let current_angle = rotation
+                    .position()
+                    .context(RotationSensorSnafu)?
+                    .as_degrees();
+
+                let output = pid.next_control_output(current_angle);
+
+                let mut motors = self.motors.lock().await;
+                motors.set_voltage(output.output).context(MotorSnafu)?;
+
+                sleep(super::SUBSYSTEM_UPDATE_PERIOD).await;
+            }
+        });
+    }
+
+    pub async fn temperature(&self) -> f64 {
+        let motors = self.motors.lock().await;
+        motors.temperature().unwrap_or(0.0)
     }
 }

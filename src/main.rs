@@ -138,7 +138,7 @@ async fn main(peripherals: Peripherals) {
 
         intake: Intake::new(
             Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-            AdiAnalogIn::new(peripherals.adi_b),
+            AdiLineTracker::new(peripherals.adi_b),
         ),
         clamp: Clamp::new(AdiDigitalOut::new(peripherals.adi_a)),
         doinker: Doinker::new(AdiDigitalOut::new(peripherals.adi_f)),
@@ -151,6 +151,9 @@ async fn main(peripherals: Peripherals) {
         )
         .expect("failed to initialize arm"),
     };
+
+    info!("starting subsystem threads");
+    robot.intake.spawn_update_thread();
 
     info!("competing");
     robot.compete_with_selector(peripherals.display).await;
