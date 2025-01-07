@@ -12,7 +12,8 @@ impl AutonRoutine<Robot> for Test {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
-        robot.intake.partial_intake();
+        robot.drivetrain.drive_for(100.0).await?;
+        robot.drivetrain.turn_for(10.0).await?;
         Ok(())
     }
 

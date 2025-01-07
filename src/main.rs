@@ -12,7 +12,8 @@ mod utils;
 use alloc::{string::ToString, vec};
 use core::time::Duration;
 
-use doxa_selector::{CompeteWithSelector, CompeteWithSelectorExt};
+use autonomous::skills::Skills;
+use doxa_selector::{AutonRoutine, CompeteWithSelector, CompeteWithSelectorExt};
 use log::{error, info};
 use subsystems::{
     arm::Arm,
@@ -98,7 +99,7 @@ impl CompeteWithSelector for Robot {
 async fn main(peripherals: Peripherals) {
     logger::init().expect("failed to initialize logger");
 
-    let robot = Robot {
+    let mut robot = Robot {
         controller: peripherals.primary_controller,
 
         drivetrain: Drivetrain::new(
@@ -120,14 +121,14 @@ async fn main(peripherals: Peripherals) {
             ),
             InertialSensor::new(peripherals.port_18),
             DrivetrainConfig {
-                drive_p: 0.3,
+                drive_p: 0.1,
                 drive_i: 0.0,
-                drive_d: 0.0,
+                drive_d: 0.4,
                 drive_tolerance: 5.0,
 
-                turning_p: 0.3,
-                turning_i: 0.001,
-                turning_d: 0.1,
+                turning_p: 0.4,
+                turning_i: 0.0,
+                turning_d: 0.5,
                 turning_tolerance: 3.0,
 
                 tolerance_velocity: 5.0,

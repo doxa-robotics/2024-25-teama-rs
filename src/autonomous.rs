@@ -12,7 +12,7 @@ pub mod auton_1;
 pub mod auton_2;
 pub mod noop;
 pub mod skills;
-// pub mod test;
+pub mod test;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Category {
@@ -38,6 +38,6 @@ pub fn autonomous_routes<'a>(
     let mut map: BTreeMap<Category, &[&dyn AutonRoutine<Robot, Return = Return>]> = BTreeMap::new();
     map.insert(Category::Skills, &[&skills::Skills]);
     map.insert(Category::Autonomous, &[&auton_1::Auton1, &auton_2::Auton2]);
-    // map.insert(Category::Test, &[&test::Test]);
+    map.insert(Category::Test, &[&test::Test]);
     map
 }

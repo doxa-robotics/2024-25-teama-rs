@@ -318,6 +318,15 @@ impl Drivetrain {
         self.turn_for(angle_delta).await
     }
 
+    pub async fn reset_inertial(&mut self, heading: f64) -> Result<(), DrivetrainError> {
+        self.inertial
+            .lock()
+            .await
+            .set_heading(heading)
+            .context(InertialSnafu)?;
+        Ok(())
+    }
+
     pub fn temperature(&self) -> f64 {
         let left_temp = self.left.temperature();
         let right_temp = self.right.temperature();

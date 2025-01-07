@@ -21,6 +21,7 @@ impl SimpleLogger {
             #[allow(clippy::arc_with_non_send_sync)]
             file: Arc::new(Mutex::new(
                 vexide::core::fs::File::options()
+                    .write(true)
                     .append(true)
                     .open("log.txt")
                     .expect("Failed to create log file"),
