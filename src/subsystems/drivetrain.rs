@@ -296,7 +296,26 @@ impl Drivetrain {
         self.right
             .brake(vexide::prelude::BrakeMode::Hold)
             .context(MotorSnafu)?;
+
+        // Reset the inertial sensor to what it "should"
+        let new_heading = target_heading - heading_difference;
+        inertial.set_heading(new_heading).context(InertialSnafu)?;
         Ok(())
+    }
+
+    /// Turn the robot to a certain angle, using turn_for under the hood.
+    pub async fn turn_to(&mut self, target_angle: f64) -> Result<(), DrivetrainError> {
+        let inertial = self.inertial.lock().await;
+        let current_angle = inertial.heading().context(InertialSnafu)?;
+        drop(inertial);
+        // Calculate the angle delta for the closest turn
+        let mut angle_delta = target_angle - current_angle;
+        if angle_delta > 180.0 {
+            angle_delta -= 360.0;
+        } else if angle_delta < -180.0 {
+            angle_delta += 360.0;
+        }
+        self.turn_for(angle_delta).await
     }
 
     pub fn temperature(&self) -> f64 {
