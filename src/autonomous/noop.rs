@@ -16,10 +16,10 @@ impl AutonRoutine<Robot> for Noop {
     }
 
     fn name(&self) -> &'static str {
-        "Noop"
+        "None"
     }
 
     fn description(&self) -> &'static str {
-        "An autonomous routine that does nothing, generated using AI. Fancy!"
+        "An autonomous routine that does nothing, generated using AI!"
     }
 }
