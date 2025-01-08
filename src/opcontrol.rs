@@ -4,7 +4,7 @@ use snafu::{ResultExt, Snafu};
 use vexide::{devices::smart::motor::MotorError, prelude::*};
 
 use crate::{
-    subsystems::{arm::ArmState, clamp::ClampError, doinker::DoinkerError, intake::IntakeState},
+    subsystems::{arm::ArmState, clamp::ClampError, doinker::DoinkerError},
     Robot,
 };
 
@@ -48,19 +48,20 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             .set_voltage(Motor::V5_MAX_VOLTAGE * right_percent)
             .context(MotorSnafu)?;
 
+        if state.button_r1.is_now_pressed() {
+            robot.intake.run(Direction::Forward).await;
+        }
+        if state.button_l1.is_now_pressed() {
+            robot.intake.run(Direction::Reverse).await;
+        }
         if state.button_r1.is_now_released() || state.button_l1.is_now_released() {
             robot.intake.stop().await;
-        }
-        if state.button_r1.is_pressed() {
-            robot.intake.run(Direction::Forward).await;
-        } else if state.button_l1.is_pressed() {
-            robot.intake.run(Direction::Reverse).await;
         }
         if state.button_y.is_now_pressed() {
             robot.intake.partial_intake().await;
         }
 
-        if state.button_x.is_now_pressed() {
+        if state.button_r2.is_now_pressed() {
             match robot.arm.state().await {
                 ArmState::Initial => robot.arm.set_state(ArmState::Intake).await,
                 ArmState::Intake => {
@@ -79,10 +80,10 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
                 ArmState::Manual(_) => robot.arm.set_state(ArmState::Initial).await,
             }
         }
-        if state.button_l2.is_pressed() {
+        if state.button_up.is_pressed() {
             robot.arm.manual_add(2.0).await;
         }
-        if state.button_r2.is_pressed() {
+        if state.button_down.is_pressed() {
             robot.arm.manual_add(-2.0).await;
         }
 
@@ -93,8 +94,6 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         if state.button_b.is_now_pressed() {
             robot.doinker.toggle().context(DoinkerSnafu)?;
         }
-
-        // TODO: lift control
 
         sleep(Duration::from_millis(10)).await;
     }

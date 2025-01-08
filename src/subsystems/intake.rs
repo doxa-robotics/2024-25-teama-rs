@@ -5,7 +5,7 @@ use snafu::{ResultExt, Snafu};
 use vexide::{
     core::{sync::Mutex, time::Instant},
     devices::{smart::motor::MotorError, PortError},
-    prelude::{sleep, spawn, AdiAnalogIn, BrakeMode, Direction, Motor},
+    prelude::{sleep, spawn, AdiLineTracker, BrakeMode, Direction, Motor},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -22,14 +22,14 @@ pub enum IntakeState {
     Stop,
 }
 
-const RING_THRESHOLD: u16 = 2500;
+const RING_THRESHOLD: f64 = 0.4;
 const TIMEOUT: u128 = 3000;
 const ARM_INTAKE_SETTLING_TIME: u128 = 600;
 
 #[derive(Debug)]
 pub struct IntakeInner {
     motor: Motor,
-    line_tracker: AdiAnalogIn,
+    line_tracker: AdiLineTracker,
     state: IntakeState,
 }
 
@@ -76,7 +76,10 @@ impl IntakeInner {
                     self.motor
                         .set_voltage(self.motor.max_voltage())
                         .context(MotorSnafu)?;
-                    let current_value = self.line_tracker.value().context(LineTrackerPortSnafu)?;
+                    let current_value = self
+                        .line_tracker
+                        .reflectivity()
+                        .context(LineTrackerPortSnafu)?;
                     if current_value < RING_THRESHOLD {
                         match self.state {
                             IntakeState::PartialIntake { start: _ } => {
@@ -97,7 +100,10 @@ impl IntakeInner {
                 }
             }
             IntakeState::Stop => {
-                let current_value = self.line_tracker.value().context(LineTrackerPortSnafu)?;
+                let current_value = self
+                    .line_tracker
+                    .reflectivity()
+                    .context(LineTrackerPortSnafu)?;
                 if current_value < RING_THRESHOLD {
                     self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
                 } else {
@@ -113,7 +119,7 @@ impl IntakeInner {
 pub struct Intake(Arc<Mutex<IntakeInner>>);
 
 impl Intake {
-    pub fn new(motor: Motor, line_tracker: AdiAnalogIn) -> Self {
+    pub fn new(motor: Motor, line_tracker: AdiLineTracker) -> Self {
         Self(Arc::new(Mutex::new(IntakeInner {
             motor,
             line_tracker,

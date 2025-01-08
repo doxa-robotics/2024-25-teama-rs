@@ -13,7 +13,7 @@ use alloc::{string::ToString, vec};
 use core::time::Duration;
 
 use autonomous::skills::Skills;
-use doxa_selector::{AutonRoutine, CompeteWithSelector, CompeteWithSelectorExt};
+use doxa_selector::{CompeteWithSelector, CompeteWithSelectorExt};
 use log::{error, info};
 use subsystems::{
     arm::Arm,
@@ -99,7 +99,7 @@ impl CompeteWithSelector for Robot {
 async fn main(peripherals: Peripherals) {
     logger::init().expect("failed to initialize logger");
 
-    let mut robot = Robot {
+    let robot = Robot {
         controller: peripherals.primary_controller,
 
         drivetrain: Drivetrain::new(
@@ -139,10 +139,13 @@ async fn main(peripherals: Peripherals) {
 
         intake: Intake::new(
             Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-            AdiAnalogIn::new(peripherals.adi_b),
+            AdiLineTracker::new(peripherals.adi_b),
         ),
         clamp: Clamp::new(AdiDigitalOut::new(peripherals.adi_a)),
-        doinker: Doinker::new(AdiDigitalOut::new(peripherals.adi_f)),
+        doinker: Doinker::new(AdiDigitalOut::with_initial_level(
+            peripherals.adi_f,
+            vexide::devices::adi::digital::LogicLevel::Low,
+        )),
         arm: Arm::new(
             MotorGroup::new(vec![
                 Motor::new_exp(peripherals.port_2, Direction::Forward),
@@ -158,5 +161,7 @@ async fn main(peripherals: Peripherals) {
     robot.intake.spawn_update();
 
     info!("competing");
-    robot.compete_with_selector(peripherals.display).await;
+    robot
+        .compete_with_selector(peripherals.display, Some(&autonomous::skills::Skills))
+        .await;
 }
