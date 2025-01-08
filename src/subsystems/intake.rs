@@ -3,7 +3,7 @@ use alloc::sync::Arc;
 use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{sync::Mutex, time::Instant},
+    core::{dbg, sync::Mutex, time::Instant},
     devices::{smart::motor::MotorError, PortError},
     prelude::{sleep, spawn, AdiLineTracker, BrakeMode, Direction, Motor},
 };
@@ -22,7 +22,7 @@ pub enum IntakeState {
     Stop,
 }
 
-const RING_THRESHOLD: f64 = 0.4;
+const RING_THRESHOLD: f64 = 0.3;
 const TIMEOUT: u128 = 3000;
 const ARM_INTAKE_SETTLING_TIME: u128 = 600;
 
@@ -80,7 +80,7 @@ impl IntakeInner {
                         .line_tracker
                         .reflectivity()
                         .context(LineTrackerPortSnafu)?;
-                    if current_value < RING_THRESHOLD {
+                    if current_value > RING_THRESHOLD {
                         match self.state {
                             IntakeState::PartialIntake { start: _ } => {
                                 self.state = IntakeState::Stop;
@@ -104,7 +104,7 @@ impl IntakeInner {
                     .line_tracker
                     .reflectivity()
                     .context(LineTrackerPortSnafu)?;
-                if current_value < RING_THRESHOLD {
+                if current_value > RING_THRESHOLD {
                     self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
                 } else {
                     self.motor.set_voltage(0.0).context(MotorSnafu)?;
