@@ -48,15 +48,13 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             .set_voltage(Motor::V5_MAX_VOLTAGE * right_percent)
             .context(MotorSnafu)?;
 
+        if state.button_r1.is_now_released() || state.button_l1.is_now_released() {
+            robot.intake.stop().await;
+        }
         if state.button_r1.is_pressed() {
             robot.intake.run(Direction::Forward).await;
         } else if state.button_l1.is_pressed() {
             robot.intake.run(Direction::Reverse).await;
-        } else if matches!(
-            robot.intake.state().await,
-            IntakeState::ArmIntake { .. } | IntakeState::Forward | IntakeState::Reverse
-        ) {
-            robot.intake.stop().await;
         }
         if state.button_y.is_now_pressed() {
             robot.intake.partial_intake().await;
