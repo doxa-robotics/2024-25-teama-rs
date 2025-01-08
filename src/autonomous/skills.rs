@@ -60,6 +60,43 @@ impl AutonRoutine<Robot> for Skills {
         // Clamp the goal and wait 500ms for the clamp to close
         robot.clamp.clamp()?;
         sleep(Duration::from_millis(500)).await;
+        // Turn to -35 degrees
+        robot.drivetrain.turn_to(-35.0).await?;
+        // Drive foward 150 cm while intaking
+        robot.intake.run(Direction::Forward).await;
+        robot.drivetrain.drive_for(1500.0).await?;
+        // Turn the intake off
+        robot.intake.stop().await;
+        // Turn to -135 degrees
+        robot.drivetrain.turn_to(-135.0).await?;
+        // Start the intake again and drive forward 70cm
+        robot.intake.run(Direction::Forward).await;
+        robot.drivetrain.drive_for(700.0).await?;
+        // Turn to -90 degrees
+        robot.drivetrain.turn_to(-90.0).await?;
+        // Drive 70cm
+        robot.drivetrain.drive_for(700.0).await?;
+        // Turn to 180 degrees and drive dowards 90cm
+        robot.drivetrain.turn_to(180.0).await?;
+        robot.drivetrain.drive_for(900.0).await?;
+        // Turn to -40 degrees and drive 30cm
+        robot.drivetrain.turn_to(-40.0).await?;
+        robot.drivetrain.drive_for(300.0).await?;
+        // Turn off the intake
+        robot.intake.stop().await;
+        // Turn to 20 degrees and release the goal
+        robot.drivetrain.turn_to(20.0).await?;
+        robot.clamp.unclamp()?;
+        // Drive forward 190cm
+        robot.drivetrain.drive_for(1900.0).await?;
+        // Turn to -90 degrees
+        robot.drivetrain.turn_to(-90.0).await?;
+        // Turn on the intake and drive forward 70cm
+        robot.intake.run(Direction::Forward).await;
+        robot.drivetrain.drive_for(700.0).await?;
+        // Stop the intake
+        robot.intake.stop().await;
+        // TODO: use lady brown
         Ok(())
     }
 
