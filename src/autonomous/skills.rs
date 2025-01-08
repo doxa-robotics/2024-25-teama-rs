@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use doxa_selector::AutonRoutine;
 use vexide::prelude::*;
 
-use crate::{Robot, subsystems::arm::ArmState};
+use crate::{subsystems::arm::ArmState, Robot};
 
 pub struct Skills;
 
@@ -23,16 +23,16 @@ impl AutonRoutine<Robot> for Skills {
         // Drive forward 40cm
         robot.drivetrain.drive_for(400.0).await?;
         // Turn right 90 degrees
-        robot.drivetrain.turn_for(90.0).await?;
-        // Unclamp the goal
+        robot.drivetrain.turn_to(90.0).await?;
+        // Clamp the goal
         robot.clamp.unclamp()?;
         // Drive backward 40cm
-        robot.drivetrain.drive_for(-400.0).await?;
+        robot.drivetrain.drive_for(-350.0).await?;
         // Clamp the goal and wait 500ms for the clamp to close
         robot.clamp.clamp()?;
         sleep(Duration::from_millis(500)).await;
         // Turn to 60 degrees
-        robot.drivetrain.turn_to(60.0).await?;
+        robot.drivetrain.turn_to(180.0 + 60.0).await?;
         // Turn the intake on
         robot.intake.run(Direction::Forward).await;
         // Drive forward 100cm

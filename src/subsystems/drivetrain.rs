@@ -220,16 +220,13 @@ impl Drivetrain {
     ///
     /// - `target_angle_delta`: The angle to turn by in radians
     pub async fn turn_for(&mut self, target_angle_delta: f64) -> Result<(), DrivetrainError> {
-        let mut inertial = self.inertial.lock().await;
+        let inertial = self.inertial.lock().await;
 
         // Get the initial position
-        inertial
-            .set_heading(180.0 - target_angle_delta / 2.0)
-            .context(InertialSnafu)?;
-        let mut real_heading = inertial.heading().context(InertialSnafu)?;
-        let target_heading = real_heading + target_angle_delta;
-        let mut heading = real_heading;
-        let mut heading_difference = 0.0;
+        let mut heading = inertial.rotation().context(InertialSnafu)?;
+        let target_heading = heading - target_angle_delta;
+
+        dbg!(heading, target_heading);
 
         let mut left_velocity = self.left.velocity().context(MotorSnafu)?;
         let mut right_velocity = self.right.velocity().context(MotorSnafu)?;
@@ -246,19 +243,8 @@ impl Drivetrain {
                 || right_velocity.abs() >= self.config.tolerance_velocity)
         {
             // Get the current position
-            real_heading = inertial.heading().context(InertialSnafu)?;
-            heading = real_heading - heading_difference;
-            if real_heading > 300.0 {
-                inertial
-                    .set_heading(real_heading - 200.0)
-                    .context(InertialSnafu)?;
-                heading_difference -= 200.0;
-            } else if real_heading < 60.0 {
-                inertial
-                    .set_heading(real_heading + 200.0)
-                    .context(InertialSnafu)?;
-                heading_difference += 200.0;
-            }
+            heading = inertial.rotation().context(InertialSnafu)?;
+            dbg!(heading);
 
             // Get the current velocity
             left_velocity = self.left.velocity().context(MotorSnafu)?;
@@ -276,14 +262,13 @@ impl Drivetrain {
 
             // Calculate the output
             let output = controller.next_control_output(heading).output;
-            dbg!(real_heading, heading, output);
 
             // Set the output
             self.left
-                .set_voltage(output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+                .set_voltage(-output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
                 .context(MotorSnafu)?;
             self.right
-                .set_voltage(-output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+                .set_voltage(output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
                 .context(MotorSnafu)?;
 
             sleep(Motor::UPDATE_INTERVAL).await;
@@ -297,9 +282,6 @@ impl Drivetrain {
             .brake(vexide::prelude::BrakeMode::Hold)
             .context(MotorSnafu)?;
 
-        // Reset the inertial sensor to what it "should"
-        let new_heading = target_heading - heading_difference;
-        inertial.set_heading(new_heading).context(InertialSnafu)?;
         Ok(())
     }
 

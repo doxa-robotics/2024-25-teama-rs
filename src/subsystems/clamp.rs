@@ -17,21 +17,21 @@ impl Clamp {
 
     pub fn toggle(&mut self) -> Result<(), ClampError> {
         match self.adi_out.level().context(DigitalPortSnafu)? {
-            vexide::devices::adi::digital::LogicLevel::Low => self.clamp(),
-            vexide::devices::adi::digital::LogicLevel::High => self.unclamp(),
+            vexide::devices::adi::digital::LogicLevel::High => self.clamp(),
+            vexide::devices::adi::digital::LogicLevel::Low => self.unclamp(),
         }
     }
 
     pub fn unclamp(&mut self) -> Result<(), ClampError> {
         self.adi_out
-            .set_level(vexide::devices::adi::digital::LogicLevel::Low)
+            .set_level(vexide::devices::adi::digital::LogicLevel::High)
             .context(DigitalPortSnafu)?;
         Ok(())
     }
 
     pub fn clamp(&mut self) -> Result<(), ClampError> {
         self.adi_out
-            .set_level(vexide::devices::adi::digital::LogicLevel::High)
+            .set_level(vexide::devices::adi::digital::LogicLevel::Low)
             .context(DigitalPortSnafu)?;
         Ok(())
     }

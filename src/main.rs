@@ -121,14 +121,14 @@ async fn main(peripherals: Peripherals) {
             ),
             InertialSensor::new(peripherals.port_18),
             DrivetrainConfig {
-                drive_p: 0.1,
+                drive_p: 0.05,
                 drive_i: 0.0,
-                drive_d: 0.4,
+                drive_d: 0.3,
                 drive_tolerance: 5.0,
 
-                turning_p: 0.4,
+                turning_p: 0.3,
                 turning_i: 0.0,
-                turning_d: 0.5,
+                turning_d: 0.2,
                 turning_tolerance: 3.0,
 
                 tolerance_velocity: 5.0,
