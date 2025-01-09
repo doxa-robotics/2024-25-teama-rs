@@ -1,9 +1,10 @@
 use alloc::sync::Arc;
 use core::time::Duration;
 
+use log::warn;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{dbg, println, sync::Mutex, time::Instant},
+    core::{dbg, sync::Mutex, time::Instant},
     devices::smart::{imu::InertialError, motor::MotorError},
     prelude::{sleep, spawn, Float, InertialSensor, Motor, SmartDevice},
 };
@@ -182,7 +183,7 @@ impl Drivetrain {
                 last_moving_instant = Instant::now();
             }
             if last_moving_instant.elapsed() > self.config.timeout {
-                println!("Drivetrain.drive_for timed out");
+                warn!("Drivetrain.drive_for timed out");
                 break;
             }
 
@@ -256,7 +257,7 @@ impl Drivetrain {
                 last_moving_instant = Instant::now();
             }
             if last_moving_instant.elapsed() > self.config.timeout {
-                println!("Drivetrain.turn_for timed out");
+                warn!("Drivetrain.turn_for timed out");
                 break;
             }
 
