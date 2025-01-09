@@ -136,6 +136,8 @@ impl Drivetrain {
     ///
     /// - `target_distance`: The distance to drive in mm
     pub async fn drive_for(&mut self, target_distance: f64) -> Result<(), DrivetrainError> {
+        let drive_start = Instant::now();
+
         // Get the initial position
         self.left.reset_position().context(MotorSnafu)?;
         self.right.reset_position().context(MotorSnafu)?;
@@ -209,6 +211,11 @@ impl Drivetrain {
         self.right
             .brake(vexide::prelude::BrakeMode::Hold)
             .context(MotorSnafu)?;
+
+        log::info!(
+            "drive_for finished in {}ms",
+            drive_start.elapsed().as_millis()
+        );
         Ok(())
     }
 
@@ -221,6 +228,8 @@ impl Drivetrain {
     ///
     /// - `target_angle_delta`: The angle to turn by in radians
     pub async fn turn_for(&mut self, target_angle_delta: f64) -> Result<(), DrivetrainError> {
+        let turn_start = Instant::now();
+
         let inertial = self.inertial.lock().await;
 
         // Get the initial position
@@ -282,6 +291,11 @@ impl Drivetrain {
         self.right
             .brake(vexide::prelude::BrakeMode::Hold)
             .context(MotorSnafu)?;
+
+        log::info!(
+            "turn_for finished in {}ms",
+            turn_start.elapsed().as_millis()
+        );
 
         Ok(())
     }
