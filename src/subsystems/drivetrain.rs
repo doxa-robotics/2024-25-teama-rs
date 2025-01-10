@@ -283,7 +283,12 @@ impl Drivetrain {
             // Calculate the output
             let output = controller.next_control_output(heading).output;
 
-            debug!("heading: {:?}", inertial.heading().unwrap_or(0.0));
+            debug!(
+                "heading: {:?} / rotation: {:?} / output: {:?}",
+                inertial.heading().unwrap_or(0.0),
+                heading,
+                output
+            );
 
             // Set the output
             self.left
