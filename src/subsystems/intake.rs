@@ -3,7 +3,7 @@ use alloc::sync::Arc;
 use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{dbg, sync::Mutex, time::Instant},
+    core::{sync::Mutex, time::Instant},
     devices::{smart::motor::MotorError, PortError},
     prelude::{sleep, spawn, AdiLineTracker, BrakeMode, Direction, Motor},
 };
@@ -176,13 +176,5 @@ impl Intake {
             Direction::Forward => IntakeState::Forward,
             Direction::Reverse => IntakeState::Reverse,
         };
-    }
-
-    pub async fn state(&self) -> IntakeState {
-        self.0.lock().await.state
-    }
-
-    pub async fn set_state(&self, state: IntakeState) {
-        self.0.lock().await.state = state;
     }
 }
