@@ -61,7 +61,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             robot.intake.partial_intake().await;
         }
 
-        if state.button_r2.is_now_pressed() {
+        if state.button_l2.is_now_pressed() {
             match robot.arm.state().await {
                 ArmState::Initial => robot.arm.set_state(ArmState::Intake).await,
                 ArmState::Intake => {
