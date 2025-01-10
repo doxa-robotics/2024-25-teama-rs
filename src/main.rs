@@ -169,6 +169,9 @@ async fn main(peripherals: Peripherals) {
 
     info!("entering competing");
     robot
-        .compete_with_selector(peripherals.display, Some(&autonomous::skills::Skills))
+        .compete_with_selector(
+            peripherals.display,
+            Some(&autonomous::right_autonomous::BlueRightAuton),
+        )
         .await;
 }

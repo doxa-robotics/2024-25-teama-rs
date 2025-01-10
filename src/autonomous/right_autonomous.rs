@@ -7,10 +7,10 @@ use vexide::prelude::*;
 
 use crate::Robot;
 
-pub struct RightRedAuton;
+pub struct RightAuton;
 
 #[async_trait]
-impl AutonRoutine<Robot> for RightRedAuton {
+impl AutonRoutine<Robot> for RightAuton {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
@@ -82,3 +82,6 @@ impl AutonRoutine<Robot> for RightRedAuton {
         "Rebecca"
     }
 }
+
+super::red_auton!(RedRightAuton, RightAuton, "Left Auton");
+super::blue_auton!(BlueRightAuton, RightAuton, "Right Auton");

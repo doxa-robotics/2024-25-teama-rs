@@ -11,6 +11,7 @@ use crate::Robot;
 pub mod five_ring;
 pub mod left_autonomous;
 pub mod noop;
+pub mod right_autonomous;
 pub mod skills;
 pub mod test;
 
@@ -39,8 +40,20 @@ pub fn autonomous_routes<'a>(
 ) -> BTreeMap<Category, &'static [&'a dyn doxa_selector::AutonRoutine<Robot, Return = Return>]> {
     let mut map: BTreeMap<Category, &[&dyn AutonRoutine<Robot, Return = Return>]> = BTreeMap::new();
     map.insert(Category::Skills, &[&skills::Skills]);
-    map.insert(Category::Red, &[&left_autonomous::RedLeftAuton]);
-    map.insert(Category::Blue, &[&left_autonomous::BlueLeftAuton]);
+    map.insert(
+        Category::Red,
+        &[
+            &left_autonomous::RedLeftAuton,
+            &right_autonomous::RedRightAuton,
+        ],
+    );
+    map.insert(
+        Category::Blue,
+        &[
+            &left_autonomous::BlueLeftAuton,
+            &right_autonomous::BlueRightAuton,
+        ],
+    );
     map.insert(Category::Test, &[&test::Test, &noop::Noop]);
     map
 }
