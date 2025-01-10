@@ -8,7 +8,7 @@ use vexide::{
 };
 
 struct SimpleLogger {
-    file: Arc<Mutex<vexide::core::fs::File>>,
+    file: Arc<Mutex<Option<vexide::core::fs::File>>>,
 }
 // Safety: The brain is single-threaded. Hopefully.
 unsafe impl core::marker::Sync for SimpleLogger {}
@@ -24,7 +24,7 @@ impl SimpleLogger {
                     .write(true)
                     .append(true)
                     .open("log.txt")
-                    .expect("Failed to create log file"),
+                    .ok(),
             )),
         }
     }
@@ -38,8 +38,10 @@ impl log::Log for SimpleLogger {
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             println!("{} - {}", record.level(), record.args());
-            if let Some(mut file) = self.file.try_lock() {
-                _ = writeln!(file, "{} - {}", record.level(), record.args());
+            if let Some(mut guard) = self.file.try_lock() {
+                if let Some(file) = guard.as_mut() {
+                    _ = writeln!(file, "{} - {}", record.level(), record.args());
+                }
             } else {
                 spawn(async {
                     vexide::async_runtime::time::sleep(Duration::from_millis(100)).await;
@@ -47,11 +49,19 @@ impl log::Log for SimpleLogger {
                 })
                 .detach();
             }
+            self.flush();
         }
     }
 
     fn flush(&self) {
         vexide::core::io::stdout().flush().ok();
+        let file = self.file.clone();
+        spawn(async move {
+            if let Some(file) = file.lock().await.as_mut() {
+                file.flush().ok();
+            }
+        })
+        .detach();
     }
 }
 
