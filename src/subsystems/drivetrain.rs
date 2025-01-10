@@ -243,7 +243,8 @@ impl Drivetrain {
     pub async fn turn_for(&mut self, target_angle_delta: f64) -> Result<(), DrivetrainError> {
         let turn_start = Instant::now();
 
-        let inertial = self.inertial.lock().await;
+        let mut inertial = self.inertial.lock().await;
+        inertial.set_rotation(10000.0).context(InertialSnafu)?;
 
         // Get the initial position
         let mut heading = inertial.rotation().context(InertialSnafu)?;
