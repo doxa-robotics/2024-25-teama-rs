@@ -7,7 +7,7 @@ public on GitHub for consumption by judges.
 &copy;2025 zabackary and rh0820. All rights reserved. Copying without permission
 is prohibited and illegal.
 
-This repository will be relicensed under the MIT license after the season is
+This repository will be relicensed under the ~MIT license~ GPLv3 ([MIT is illegal](https://opensource.stackexchange.com/questions/1640/if-im-using-a-gpl-3-library-in-my-project-can-i-license-my-project-under-mit-l)) after the season is
 over.
 
 ## Driver control documentation

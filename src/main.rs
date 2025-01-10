@@ -12,7 +12,6 @@ mod utils;
 use alloc::{string::ToString, vec};
 use core::time::Duration;
 
-use autonomous::skills::Skills;
 use doxa_selector::{CompeteWithSelector, CompeteWithSelectorExt};
 use log::{error, info};
 use subsystems::{
@@ -159,11 +158,16 @@ async fn main(peripherals: Peripherals) {
         .expect("failed to initialize arm"),
     };
 
+    info!("-- Status --");
+    info!("Drivetrain temp: {:?}", robot.drivetrain.temperature());
+    info!("Arm temp: {:?}", robot.arm.temperature());
+    info!("Intake temp: {:?}", robot.intake.temperature());
+
     info!("starting subsystem background tasks");
     robot.arm.spawn_update();
     robot.intake.spawn_update();
 
-    info!("competing");
+    info!("entering competing");
     robot
         .compete_with_selector(peripherals.display, Some(&autonomous::skills::Skills))
         .await;
