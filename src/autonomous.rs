@@ -10,6 +10,7 @@ use crate::Robot;
 
 pub mod five_ring;
 pub mod left_autonomous;
+pub mod new_auton;
 pub mod noop;
 pub mod right_autonomous;
 pub mod skills;
@@ -45,6 +46,7 @@ pub fn autonomous_routes<'a>(
         &[
             &left_autonomous::RedLeftAuton,
             &right_autonomous::RedRightAuton,
+            &new_auton::RedNewAuton,
         ],
     );
     map.insert(
@@ -52,6 +54,7 @@ pub fn autonomous_routes<'a>(
         &[
             &left_autonomous::BlueLeftAuton,
             &right_autonomous::BlueRightAuton,
+            &new_auton::BlueNewAuton,
         ],
     );
     map.insert(Category::Test, &[&test::Test, &noop::Noop]);

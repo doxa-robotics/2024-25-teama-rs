@@ -127,11 +127,11 @@ async fn main(peripherals: Peripherals) {
 
                 turning_p: 0.4,
                 turning_i: 0.0,
-                turning_d: 0.2,
+                turning_d: 0.25,
                 turning_tolerance: 5.0,
 
                 tolerance_velocity: 10.0,
-                timeout: Duration::from_secs(1),
+                timeout: Duration::from_millis(500),
                 wheel_circumference: 165.0,
             },
         ),
@@ -171,7 +171,7 @@ async fn main(peripherals: Peripherals) {
     robot
         .compete_with_selector(
             peripherals.display,
-            Some(&autonomous::right_autonomous::BlueRightAuton),
+            Some(&autonomous::new_auton::RedNewAuton),
         )
         .await;
 }
