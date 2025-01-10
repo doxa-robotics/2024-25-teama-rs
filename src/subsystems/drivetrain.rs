@@ -276,13 +276,12 @@ impl Drivetrain {
         {
             // Check if the sign of the output is incorrect (i.e., the robot is turning the wrong way)
             // FIXME: this is a hacky way to fix the sign error, but it works for now :(
-            if !has_corrected_sign_error
-                && turn_start.elapsed() > SIGN_ERROR_CHECK_DELAY
-                && (heading - target_heading).abs() > initial_error
-            {
-                self.negate_turn_output = !self.negate_turn_output;
+            if !has_corrected_sign_error && turn_start.elapsed() > SIGN_ERROR_CHECK_DELAY {
+                if (heading - target_heading).abs() > initial_error {
+                    self.negate_turn_output = !self.negate_turn_output;
+                    warn!("Drivetrain.turn_for correcting sign error by negating output as error has increased in 100ms");
+                }
                 has_corrected_sign_error = true;
-                warn!("Drivetrain.turn_for correcting sign error by negating output as error has increased in 100ms");
             }
 
             // Get the current position
