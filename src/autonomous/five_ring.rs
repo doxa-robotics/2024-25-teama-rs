@@ -14,8 +14,6 @@ impl AutonRoutine<Robot> for FiveRingRed {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
-        robot.drivetrain.set_negate_turns(false);
-
         Ok(())
     }
 

@@ -7,15 +7,13 @@ use vexide::prelude::*;
 
 use crate::Robot;
 
-pub struct LeftRedAuton;
+struct LeftAuton;
 
 #[async_trait]
-impl AutonRoutine<Robot> for LeftRedAuton {
+impl AutonRoutine<Robot> for LeftAuton {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
-        robot.drivetrain.set_negate_turns(false);
-
         // 0 degrees
         robot.drivetrain.reset_inertial(0.0).await?;
         // Turn the intake on
@@ -60,10 +58,13 @@ impl AutonRoutine<Robot> for LeftRedAuton {
     }
 
     fn name(&self) -> &'static str {
-        "Left Red Auton"
+        ""
     }
 
     fn description(&self) -> &'static str {
         "Rebecca"
     }
 }
+
+super::red_auton!(RedLeftAuton, LeftAuton, "Right Auton");
+super::blue_auton!(BlueLeftAuton, LeftAuton, "Left Auton");
