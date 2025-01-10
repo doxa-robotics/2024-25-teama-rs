@@ -252,8 +252,7 @@ impl Drivetrain {
         let turn_start = Instant::now();
         let mut has_corrected_sign_error = false;
 
-        let mut inertial = self.inertial.lock().await;
-        inertial.set_rotation(10000.0).context(InertialSnafu)?;
+        let inertial = self.inertial.lock().await;
 
         // Get the initial position
         let mut heading = inertial.rotation().context(InertialSnafu)?;
