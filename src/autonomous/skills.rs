@@ -14,6 +14,8 @@ impl AutonRoutine<Robot> for Skills {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
+        robot.drivetrain.set_negate_turns(false);
+
         // 0 degrees
         robot.drivetrain.reset_inertial(0.0).await?;
         // Place the ring on the stake

@@ -14,14 +14,28 @@ impl AutonRoutine<Robot> for LeftRedAuton {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
+        robot.drivetrain.set_negate_turns(false);
+
         // 0 degrees
         robot.drivetrain.reset_inertial(0.0).await?;
         // Turn the intake on
         robot.intake.run(Direction::Forward).await;
+        // Move forward cm
+        robot.drivetrain.drive_for(500.0).await?;
+
+        sleep(Duration::from_millis(1000)).await;
+        robot.intake.stop().await;
+        //turn
+        robot.drivetrain.turn_to(-90.0).await?;
         //unclamp
         robot.clamp.unclamp()?;
-        // Move forward cm
-        robot.drivetrain.drive_for(800.0).await?;
+        // Move back cm
+        robot.drivetrain.drive_for(-250.0).await?;
+        //unclamp
+        robot.clamp.clamp()?;
+        //score
+        robot.intake.run(Direction::Forward).await;
+        sleep(Duration::from_millis(1000)).await;
         robot.intake.stop().await;
 
         //clamp
@@ -41,37 +55,6 @@ impl AutonRoutine<Robot> for LeftRedAuton {
         //back 50
         robot.drivetrain.drive_for(500.0).await?;
         // Turn the intake off
-        robot.intake.stop().await;
-        //turn 180
-        robot.drivetrain.turn_to(180.0).await?;
-        //move forward 10
-        robot.drivetrain.drive_for(100.0).await?;
-        //move back 15
-        robot.drivetrain.drive_for(-150.0).await?;
-        //turn
-        robot.drivetrain.turn_to(25.0).await?;
-        //unclamp
-        robot.clamp.unclamp()?;
-        //move forward 70
-        robot.drivetrain.drive_for(700.0).await?;
-        //clamp
-        robot.clamp.clamp()?;
-        //turn
-        robot.drivetrain.turn_to(-48.0).await?;
-        // Turn the intake on
-        robot.intake.run(Direction::Forward).await;
-        //move forward 60
-        robot.drivetrain.drive_for(600.0).await?;
-        //turn
-        robot.drivetrain.turn_to(-150.0).await?;
-        //move forward 40
-        robot.drivetrain.drive_for(400.0).await?;
-        // Turn the intake off
-        robot.intake.stop().await;
-        //turn
-        robot.drivetrain.turn_to(-48.0).await?;
-        //move Back to ladder
-        robot.drivetrain.drive_for(900.0).await?;
 
         Ok(())
     }

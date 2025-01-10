@@ -71,6 +71,7 @@ pub struct Drivetrain {
     right: MotorGroup,
     inertial: Arc<Mutex<InertialSensor>>,
     config: DrivetrainConfig,
+    negate_turns: bool,
 }
 
 impl Drivetrain {
@@ -86,7 +87,12 @@ impl Drivetrain {
             right,
             inertial: Arc::new(Mutex::new(inertial)),
             config,
+            negate_turns: false,
         }
+    }
+
+    pub fn set_negate_turns(&mut self, negate: bool) {
+        self.negate_turns = negate;
     }
 
     /// Returns a mutable reference to the left motors
@@ -301,7 +307,11 @@ impl Drivetrain {
     }
 
     /// Turn the robot to a certain angle, using turn_for under the hood.
-    pub async fn turn_to(&mut self, target_angle: f64) -> Result<(), DrivetrainError> {
+    pub async fn turn_to(&mut self, mut target_angle: f64) -> Result<(), DrivetrainError> {
+        if self.negate_turns {
+            target_angle = -target_angle;
+        }
+
         let inertial = self.inertial.lock().await;
         let current_angle = inertial.heading().context(InertialSnafu)?;
         drop(inertial);

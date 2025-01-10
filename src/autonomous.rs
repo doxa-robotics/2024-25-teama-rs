@@ -8,13 +8,9 @@ use doxa_selector::AutonRoutine;
 
 use crate::Robot;
 
-pub mod blue_autonomous;
-pub mod five_ring_blue;
-pub mod five_ring_red;
+pub mod five_ring;
 pub mod leftred_autonomous;
 pub mod noop;
-pub mod red_autonomous;
-pub mod rightred_autonomous;
 pub mod skills;
 pub mod test;
 
@@ -45,20 +41,9 @@ pub fn autonomous_routes<'a>(
     map.insert(Category::Skills, &[&skills::Skills]);
     map.insert(
         Category::Red,
-        &[
-            &five_ring_red::FiveRingRed,
-            &leftred_autonomous::LeftRedAuton,
-            &red_autonomous::RedAuton,
-            &rightred_autonomous::RightRedAuton,
-        ],
+        &[&five_ring::FiveRingRed, &leftred_autonomous::LeftRedAuton],
     );
-    map.insert(
-        Category::Blue,
-        &[
-            &five_ring_blue::FiveRingBlue,
-            &blue_autonomous::BlueAutonomous,
-        ],
-    );
+    map.insert(Category::Blue, &[]);
     map.insert(Category::Test, &[&test::Test, &noop::Noop]);
     map
 }
