@@ -284,11 +284,12 @@ impl Drivetrain {
             let output = controller.next_control_output(heading).output;
 
             debug!(
-                "heading: {:?} / rotation: {:?} / output: {:?} / target heading: {:?}",
+                "heading: {:?} / rotation: {:?} / output: {:?} / target heading: {:?} / physical orientation: {:?}",
                 inertial.heading().unwrap_or(0.0),
                 heading,
                 output,
-                target_heading
+                target_heading,
+                inertial.physical_orientation()
             );
 
             // Set the output
