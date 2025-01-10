@@ -4,12 +4,14 @@ use core::time::Duration;
 use log::{debug, info, warn};
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{dbg, println, sync::Mutex, time::Instant},
+    core::{sync::Mutex, time::Instant},
     devices::smart::{imu::InertialError, motor::MotorError},
     prelude::{sleep, spawn, Float, InertialSensor, Motor, SmartDevice},
 };
 
 use super::super::utils::motor_group::MotorGroup;
+
+const SIGN_ERROR_CHECK_DELAY: Duration = Duration::from_millis(100);
 
 #[derive(Debug, Snafu)]
 pub enum DrivetrainError {
@@ -72,6 +74,7 @@ pub struct Drivetrain {
     inertial: Arc<Mutex<InertialSensor>>,
     config: DrivetrainConfig,
     negate_turns: bool,
+    negate_turn_output: bool,
 }
 
 impl Drivetrain {
@@ -88,6 +91,7 @@ impl Drivetrain {
             inertial: Arc::new(Mutex::new(inertial)),
             config,
             negate_turns: false,
+            negate_turn_output: false,
         }
     }
 
@@ -205,6 +209,10 @@ impl Drivetrain {
             // Calculate the output
             let left_output = left_controller.next_control_output(left_distance).output;
             let right_output = right_controller.next_control_output(right_distance).output;
+            debug!(
+                "left distance: {:?} / right distance: {:?} / left output: {:?} / right output: {:?} / target distance: {:?}",
+                left_distance, right_distance, left_output, right_output, target_distance
+            );
 
             // Set the output
             self.left
@@ -242,6 +250,7 @@ impl Drivetrain {
     /// - `target_angle_delta`: The angle to turn by in radians
     pub async fn turn_for(&mut self, target_angle_delta: f64) -> Result<(), DrivetrainError> {
         let turn_start = Instant::now();
+        let mut has_corrected_sign_error = false;
 
         let mut inertial = self.inertial.lock().await;
         inertial.set_rotation(10000.0).context(InertialSnafu)?;
@@ -260,10 +269,22 @@ impl Drivetrain {
             .d(self.config.turning_d, f64::MAX);
 
         let mut last_moving_instant = Instant::now();
+        let initial_error = (heading - target_heading).abs();
         while (heading - target_heading).abs() >= self.config.turning_tolerance
             || (left_velocity.abs() >= self.config.tolerance_velocity
                 || right_velocity.abs() >= self.config.tolerance_velocity)
         {
+            // Check if the sign of the output is incorrect (i.e., the robot is turning the wrong way)
+            // FIXME: this is a hacky way to fix the sign error, but it works for now :(
+            if !has_corrected_sign_error
+                && turn_start.elapsed() > SIGN_ERROR_CHECK_DELAY
+                && (heading - target_heading).abs() > initial_error
+            {
+                self.negate_turn_output = !self.negate_turn_output;
+                has_corrected_sign_error = true;
+                warn!("Drivetrain.turn_for correcting sign error by negating output as error has increased in 100ms");
+            }
+
             // Get the current position
             heading = inertial.rotation().context(InertialSnafu)?;
 
@@ -282,7 +303,11 @@ impl Drivetrain {
             }
 
             // Calculate the output
-            let output = controller.next_control_output(heading).output;
+            let mut output = controller.next_control_output(heading).output;
+            if self.negate_turn_output {
+                // FIXME: this is still hacky
+                output *= -1.0;
+            }
 
             debug!(
                 "heading: {:?} / rotation: {:?} / output: {:?} / target heading: {:?} / physical orientation: {:?}",
