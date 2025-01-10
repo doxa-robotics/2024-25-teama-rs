@@ -247,7 +247,7 @@ impl Drivetrain {
 
         // Get the initial position
         let mut heading = inertial.rotation().context(InertialSnafu)?;
-        let target_heading = heading - target_angle_delta;
+        let target_heading = heading + target_angle_delta;
 
         let mut left_velocity = self.left.velocity().context(MotorSnafu)?;
         let mut right_velocity = self.right.velocity().context(MotorSnafu)?;
@@ -319,7 +319,7 @@ impl Drivetrain {
 
     /// Turn the robot to a certain angle, using turn_for under the hood.
     pub async fn turn_to(&mut self, mut target_angle: f64) -> Result<(), DrivetrainError> {
-        if !self.negate_turns {
+        if self.negate_turns {
             target_angle = -target_angle;
         }
 
