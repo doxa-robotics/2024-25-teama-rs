@@ -141,7 +141,10 @@ async fn main(peripherals: Peripherals) {
             Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
             AdiLineTracker::new(peripherals.adi_b),
         ),
-        clamp: Clamp::new(AdiDigitalOut::new(peripherals.adi_a)),
+        clamp: Clamp::new(AdiDigitalOut::with_initial_level(
+            peripherals.adi_a,
+            vexide::devices::adi::digital::LogicLevel::High,
+        )),
         doinker: Doinker::new(AdiDigitalOut::with_initial_level(
             peripherals.adi_f,
             vexide::devices::adi::digital::LogicLevel::Low,
