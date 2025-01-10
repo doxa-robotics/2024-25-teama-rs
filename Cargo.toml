@@ -26,3 +26,7 @@ vexide = "0.5.2"
 strip = true
 opt-level = "z"
 lto = true
+
+[features]
+default = []
+ui = ["doxa-selector/ui"]
