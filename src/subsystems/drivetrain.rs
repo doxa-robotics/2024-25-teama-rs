@@ -1,10 +1,10 @@
 use alloc::sync::Arc;
 use core::time::Duration;
 
-use log::warn;
+use log::{debug, info, warn};
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{dbg, sync::Mutex, time::Instant},
+    core::{dbg, println, sync::Mutex, time::Instant},
     devices::smart::{imu::InertialError, motor::MotorError},
     prelude::{sleep, spawn, Float, InertialSensor, Motor, SmartDevice},
 };
@@ -142,6 +142,13 @@ impl Drivetrain {
     ///
     /// - `target_distance`: The distance to drive in mm
     pub async fn drive_for(&mut self, target_distance: f64) -> Result<(), DrivetrainError> {
+        self.drive_for_advanced(target_distance, 1.0).await
+    }
+    pub async fn drive_for_advanced(
+        &mut self,
+        target_distance: f64,
+        p_multiplier: f64,
+    ) -> Result<(), DrivetrainError> {
         let drive_start = Instant::now();
 
         // Get the initial position
@@ -159,13 +166,13 @@ impl Drivetrain {
         let mut left_controller: pid::Pid<f64> =
             pid::Pid::new(target_distance, Motor::V5_MAX_VOLTAGE);
         left_controller
-            .p(self.config.drive_p, f64::MAX)
+            .p(self.config.drive_p * p_multiplier, f64::MAX)
             .i(self.config.drive_i, f64::MAX)
             .d(self.config.drive_d, f64::MAX);
         let mut right_controller: pid::Pid<f64> =
             pid::Pid::new(target_distance, Motor::V5_MAX_VOLTAGE);
         right_controller
-            .p(self.config.drive_p, f64::MAX)
+            .p(self.config.drive_p * p_multiplier, f64::MAX)
             .i(self.config.drive_i, f64::MAX)
             .d(self.config.drive_d, f64::MAX);
 
@@ -242,8 +249,6 @@ impl Drivetrain {
         let mut heading = inertial.rotation().context(InertialSnafu)?;
         let target_heading = heading - target_angle_delta;
 
-        dbg!(heading, target_heading);
-
         let mut left_velocity = self.left.velocity().context(MotorSnafu)?;
         let mut right_velocity = self.right.velocity().context(MotorSnafu)?;
 
@@ -260,7 +265,6 @@ impl Drivetrain {
         {
             // Get the current position
             heading = inertial.rotation().context(InertialSnafu)?;
-            dbg!(heading);
 
             // Get the current velocity
             left_velocity = self.left.velocity().context(MotorSnafu)?;
@@ -279,12 +283,14 @@ impl Drivetrain {
             // Calculate the output
             let output = controller.next_control_output(heading).output;
 
+            debug!("heading: {:?}", inertial.heading().unwrap_or(0.0));
+
             // Set the output
             self.left
-                .set_voltage(-output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+                .set_voltage(output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
                 .context(MotorSnafu)?;
             self.right
-                .set_voltage(output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+                .set_voltage(-output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
                 .context(MotorSnafu)?;
 
             sleep(Motor::UPDATE_INTERVAL).await;
@@ -308,12 +314,12 @@ impl Drivetrain {
 
     /// Turn the robot to a certain angle, using turn_for under the hood.
     pub async fn turn_to(&mut self, mut target_angle: f64) -> Result<(), DrivetrainError> {
-        if self.negate_turns {
+        if !self.negate_turns {
             target_angle = -target_angle;
         }
 
         let inertial = self.inertial.lock().await;
-        let current_angle = inertial.heading().context(InertialSnafu)?;
+        let current_angle = -inertial.heading().context(InertialSnafu)?;
         drop(inertial);
         // Calculate the angle delta for the closest turn
         let mut angle_delta = target_angle - current_angle;
@@ -322,6 +328,10 @@ impl Drivetrain {
         } else if angle_delta < -180.0 {
             angle_delta += 360.0;
         }
+        info!(
+            "starting from {}, turning to {}, delta: {}",
+            current_angle, target_angle, angle_delta
+        );
         self.turn_for(angle_delta).await
     }
 
