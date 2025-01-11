@@ -21,7 +21,7 @@ impl AutonRoutine<Robot> for Skills {
         sleep(Duration::from_secs(1)).await;
         robot.intake.stop().await;
         // Drive forward 40cm
-        robot.drivetrain.drive_for(420.0).await?;
+        robot.drivetrain.drive_for(360.0).await?;
         // Turn right 90 degrees
         robot.drivetrain.turn_to(90.0).await?;
         // Clamp the goal
@@ -64,7 +64,7 @@ impl AutonRoutine<Robot> for Skills {
         robot.clamp.unclamp()?;
         sleep(Duration::from_millis(500)).await;
         // Turn to 110 degrees
-        robot.drivetrain.turn_to(95.0).await?;
+        robot.drivetrain.turn_to(90.0).await?;
         // Drive backward 60cm
         robot.drivetrain.drive_for(-600.0).await?;
         // Clamp the goal and wait 500ms for the clamp to close
