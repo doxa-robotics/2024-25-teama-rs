@@ -29,7 +29,7 @@ impl AutonRoutine<Robot> for NewAuton {
         robot.drivetrain.drive_for(400.0).await?;
         robot.drivetrain.turn_to(360.0 - 48.0).await?;
         robot.clamp.unclamp()?;
-        robot.drivetrain.drive_for(-480.0).await?;
+        robot.drivetrain.drive_for_advanced(-480.0, 0.6).await?;
         robot.drivetrain.drive_for(-150.0).await?;
         robot.clamp.clamp()?;
         sleep(Duration::from_millis(500)).await;
@@ -37,16 +37,7 @@ impl AutonRoutine<Robot> for NewAuton {
         robot.intake.run(Direction::Forward).await;
         robot.drivetrain.drive_for(680.0).await?;
         robot.drivetrain.drive_for(-200.0).await?;
-        robot.drivetrain.turn_for(-35.0).await?;
-        robot.drivetrain.drive_for(250.0).await?;
-        robot.intake.stop().await;
-        robot.drivetrain.drive_for(-200.0).await?;
-        robot.drivetrain.turn_to(90.0).await?;
-        robot
-            .arm
-            .set_state(crate::subsystems::arm::ArmState::MaxExpansion)
-            .await;
-        robot.drivetrain.drive_for_advanced(1200.0, 0.5).await?;
+        robot.clamp.unclamp()?;
 
         Ok(())
     }
