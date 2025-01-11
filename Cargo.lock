@@ -810,7 +810,7 @@ dependencies = [
 [[package]]
 name = "doxa-selector"
 version = "0.1.0"
-source = "git+https://github.com/doxa-robotics/doxa-selector-rs.git?branch=main#c5951caf81efea772ed77b81507ae878f507f8a5"
+source = "git+https://github.com/doxa-robotics/doxa-selector-rs.git?branch=main#753d910e57ae45d5c8a42c8a79cd1c5b3238a099"
 dependencies = [
  "async-trait",
  "slint",
