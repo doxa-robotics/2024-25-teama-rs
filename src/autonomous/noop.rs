@@ -11,7 +11,8 @@ pub struct Noop;
 impl AutonRoutine<Robot> for Noop {
     type Return = super::Return;
 
-    async fn run(&self, _robot: &mut Robot) -> Self::Return {
+    async fn run(&self, robot: &mut Robot) -> Self::Return {
+        crate::opcontrol::opcontrol(robot).await?;
         Ok(())
     }
 
