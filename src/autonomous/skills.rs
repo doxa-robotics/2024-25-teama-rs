@@ -21,13 +21,14 @@ impl AutonRoutine<Robot> for Skills {
         sleep(Duration::from_secs(1)).await;
         robot.intake.stop().await;
         // Drive forward 40cm
-        robot.drivetrain.drive_for(360.0).await?;
+        robot.drivetrain.drive_for(330.0).await?;
         // Turn right 90 degrees
         robot.drivetrain.turn_to(90.0).await?;
         // Clamp the goal
         robot.clamp.unclamp()?;
         // Drive backward 40cm
-        robot.drivetrain.drive_for(-370.0).await?;
+        robot.drivetrain.drive_for(-340.0).await?;
+        robot.drivetrain.drive_for(-40.0).await?;
         // Clamp the goal and wait 500ms for the clamp to close
         robot.clamp.clamp()?;
         sleep(Duration::from_millis(500)).await;
@@ -36,12 +37,12 @@ impl AutonRoutine<Robot> for Skills {
         // Turn the intake on
         robot.intake.run(Direction::Forward).await;
         // Drive forward 100cm
-        robot.drivetrain.drive_for(1000.0).await?;
+        robot.drivetrain.drive_for(1100.0).await?;
         // Turn to 55 degrees
         robot.drivetrain.turn_to(53.0).await?;
         sleep(Duration::from_millis(500)).await;
         // Drive 1 meter
-        robot.drivetrain.drive_for(1210.0).await?;
+        robot.drivetrain.drive_for(1110.0).await?;
         // Drive backward 30cm
         robot.drivetrain.drive_for(-320.0).await?;
         // Turn the intake off
