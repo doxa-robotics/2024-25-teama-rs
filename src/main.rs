@@ -122,7 +122,7 @@ async fn main(peripherals: Peripherals) {
             DrivetrainConfig {
                 drive_p: 0.06,
                 drive_i: 0.0,
-                drive_d: 0.3,
+                drive_d: 0.2,
                 drive_tolerance: 5.0,
 
                 turning_p: 0.4,

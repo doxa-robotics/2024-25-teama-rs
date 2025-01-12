@@ -28,6 +28,7 @@ pub enum OpcontrolError {
 }
 
 pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
+    robot.intake.stop().await;
     loop {
         let state = robot.controller.state().unwrap_or_default();
 

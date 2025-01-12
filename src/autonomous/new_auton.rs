@@ -36,6 +36,7 @@ impl AutonRoutine<Robot> for NewAuton {
         robot.drivetrain.turn_for(180.0).await?;
         robot.intake.run(Direction::Forward).await;
         robot.drivetrain.drive_for(680.0).await?;
+        sleep(Duration::from_millis(1500)).await;
         robot.drivetrain.drive_for(-200.0).await?;
         robot.clamp.unclamp()?;
 
