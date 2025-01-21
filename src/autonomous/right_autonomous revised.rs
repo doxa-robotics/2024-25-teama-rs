@@ -25,7 +25,7 @@ impl AutonRoutine<Robot> for RightAuton {
         robot.drivetrain.drive_for(-640.0).await?;
         //turn
         robot.drivetrain.turn_to(140.0).await?;
-        // Move  64cm
+        // Move  20cm
         robot.drivetrain.drive_for(-200.0).await?;
         //clamp
         robot.clamp.clamp()?;
@@ -34,15 +34,13 @@ impl AutonRoutine<Robot> for RightAuton {
         sleep(Duration::from_millis(1000)).await;
         robot.intake.stop().await;
         //turn
-        robot.drivetrain.turn_to(-90.0).await?;
-        //turn
-        robot.drivetrain.turn_to(220.0).await?;
+        robot.drivetrain.turn_to(290.0).await?;
         //unclamp
         robot.clamp.unclamp()?;
         // Move  5cm
         robot.drivetrain.drive_for(50.0).await?;
         //turn
-        robot.drivetrain.turn_to(-30.0).await?;
+        robot.drivetrain.turn_to(30.0).await?;
     
 //--------------------- grab stake 2 and score 2----------------//
 
@@ -60,8 +58,6 @@ impl AutonRoutine<Robot> for RightAuton {
         robot.drivetrain.turn_to(180.0).await?;
         //move forward 50
         robot.drivetrain.drive_for(500.0).await?;
-        //move back 15
-        robot.drivetrain.drive_for(-150.0).await?;
 
 //------------------------get last ring and get to the ladder-----------------//
         //turn
