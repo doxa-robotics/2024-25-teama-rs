@@ -129,9 +129,9 @@ async fn main(peripherals: Peripherals) {
                 drive_d: 0.48,
                 drive_tolerance: 5.0,
 
-                turning_p: 0.4,
+                turning_p: 0.28,
                 turning_i: 0.0,
-                turning_d: 0.25,
+                turning_d: 0.7,
                 turning_tolerance: 5.0,
 
                 tolerance_velocity: 10.0,

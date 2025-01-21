@@ -246,12 +246,12 @@ impl Drivetrain {
         self.left
             .lock()
             .await
-            .brake(vexide::prelude::BrakeMode::Hold)
+            .brake(vexide::prelude::BrakeMode::Brake)
             .context(MotorSnafu)?;
         self.right
             .lock()
             .await
-            .brake(vexide::prelude::BrakeMode::Hold)
+            .brake(vexide::prelude::BrakeMode::Brake)
             .context(MotorSnafu)?;
 
         log::info!(
@@ -359,12 +359,12 @@ impl Drivetrain {
         self.left
             .lock()
             .await
-            .brake(vexide::prelude::BrakeMode::Hold)
+            .brake(vexide::prelude::BrakeMode::Brake)
             .context(MotorSnafu)?;
         self.right
             .lock()
             .await
-            .brake(vexide::prelude::BrakeMode::Hold)
+            .brake(vexide::prelude::BrakeMode::Brake)
             .context(MotorSnafu)?;
 
         log::info!(

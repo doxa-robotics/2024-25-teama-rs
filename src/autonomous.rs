@@ -43,19 +43,11 @@ pub fn autonomous_routes<'a>(
     map.insert(Category::Skills, &[&skills::Skills]);
     map.insert(
         Category::Red,
-        &[
-            &left_autonomous::RedLeftAuton,
-            &right_autonomous::RedRightAuton,
-            &new_auton::RedNewAuton,
-        ],
+        &[&left_autonomous::RedLeftAuton, &new_auton::RedNewAuton],
     );
     map.insert(
         Category::Blue,
-        &[
-            &left_autonomous::BlueLeftAuton,
-            &right_autonomous::BlueRightAuton,
-            &new_auton::BlueNewAuton,
-        ],
+        &[&left_autonomous::BlueLeftAuton, &new_auton::BlueNewAuton],
     );
     map.insert(Category::Test, &[&test::Test, &noop::Noop]);
     map
