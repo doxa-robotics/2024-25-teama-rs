@@ -14,20 +14,27 @@ impl AutonRoutine<Robot> for RightAuton {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
+        //--------------------grab the stake---------------------------//
         // 0 degrees
         robot.drivetrain.reset_inertial(0.0).await?;
         //turn
-        robot.drivetrain.turn_to(25.0).await?;
+        robot.drivetrain.turn_to(180.0).await?;
         //unclamp
         robot.clamp.unclamp()?;
-        // Move forward 97cm
-        robot.drivetrain.drive_for(-970.0).await?;
+        // Move  64cm
+        robot.drivetrain.drive_for(-64.0).await?;
+        //turn
+        robot.drivetrain.turn_to(220.0).await?;
+        // Move  64cm
+        robot.drivetrain.drive_for(-200.0).await?;
         //clamp
         robot.clamp.clamp()?;
         // Turn the intake on
         robot.intake.run(Direction::Forward).await;
         sleep(Duration::from_millis(1000)).await;
         robot.intake.stop().await;
+
+
         //back 137cm
         robot.drivetrain.drive_for(1370.0).await?;
         //turn
