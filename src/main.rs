@@ -124,9 +124,9 @@ async fn main(peripherals: Peripherals) {
             right_motors.clone(),
             inertial.clone(),
             DrivetrainConfig {
-                drive_p: 0.06,
-                drive_i: 0.0,
-                drive_d: 0.2,
+                drive_p: 0.065,
+                drive_i: 0.00015,
+                drive_d: 0.48,
                 drive_tolerance: 5.0,
 
                 turning_p: 0.4,
@@ -169,14 +169,11 @@ async fn main(peripherals: Peripherals) {
     info!("Intake temp: {:?}", robot.intake.temperature());
 
     info!("starting subsystem background tasks");
-    robot.arm.spawn_update();
+    robot.arm.task();
     robot.intake.task();
 
     info!("entering competing");
     robot
-        .compete_with_selector(
-            peripherals.display,
-            Some(&autonomous::new_auton::RedNewAuton),
-        )
+        .compete_with_selector(peripherals.display, Some(&autonomous::test::Test))
         .await;
 }

@@ -192,8 +192,8 @@ impl Drivetrain {
             .d(self.config.drive_d, f64::MAX);
 
         let mut last_moving_instant = Instant::now();
-        while ((left_distance - target_distance).abs() >= self.config.drive_tolerance
-            || (right_distance - target_distance).abs() >= self.config.drive_tolerance)
+        while ((left_distance - left_controller.setpoint).abs() >= self.config.drive_tolerance
+            || (right_distance - right_controller.setpoint).abs() >= self.config.drive_tolerance)
             || (left_velocity.abs() >= self.config.tolerance_velocity
                 || right_velocity.abs() >= self.config.tolerance_velocity)
         {
@@ -276,8 +276,8 @@ impl Drivetrain {
         let inertial = self.inertial.lock().await;
 
         // Get the initial position
-        let mut heading = inertial.rotation().context(InertialSnafu)?;
-        let target_heading = heading + target_angle_delta;
+        let mut heading = -inertial.rotation().context(InertialSnafu)?;
+        let target_heading = heading - target_angle_delta;
 
         let mut left_velocity = self.left.lock().await.velocity().context(MotorSnafu)?;
         let mut right_velocity = self.right.lock().await.velocity().context(MotorSnafu)?;
@@ -308,7 +308,7 @@ impl Drivetrain {
             }
 
             // Get the current position
-            heading = inertial.rotation().context(InertialSnafu)?;
+            heading = -inertial.rotation().context(InertialSnafu)?;
 
             // Get the current velocity
             left_velocity = left.velocity().context(MotorSnafu)?;
@@ -343,10 +343,10 @@ impl Drivetrain {
             );
 
             // Set the output
-            left.set_voltage(output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+            left.set_voltage(-output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
                 .context(MotorSnafu)?;
             right
-                .set_voltage(-output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+                .set_voltage(output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
                 .context(MotorSnafu)?;
 
             drop(left);
@@ -382,7 +382,7 @@ impl Drivetrain {
         }
 
         let inertial = self.inertial.lock().await;
-        let current_angle = -inertial.heading().context(InertialSnafu)?;
+        let current_angle = inertial.heading().context(InertialSnafu)?;
         drop(inertial);
         // Calculate the angle delta for the closest turn
         let mut angle_delta = target_angle - current_angle;

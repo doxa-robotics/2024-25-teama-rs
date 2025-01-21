@@ -3,6 +3,7 @@ use core::time::Duration;
 
 use async_trait::async_trait;
 use doxa_selector::AutonRoutine;
+use log::debug;
 use vexide::{core::println, prelude::sleep};
 
 use crate::Robot;
@@ -15,7 +16,9 @@ impl AutonRoutine<Robot> for Test {
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
         robot.drivetrain.reset_inertial(0.0).await?;
-        robot.drivetrain.turn_for(10.0).await?;
+        robot.drivetrain.turn_to(45.0).await?;
+        robot.drivetrain.turn_to(-45.0).await?;
+        debug!("done");
 
         Ok(())
     }

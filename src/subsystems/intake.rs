@@ -85,6 +85,7 @@ impl IntakeInner {
                         .context(LineTrackerPortSnafu)?;
                     if current_value > RING_THRESHOLD {
                         debug!("ring accepted, reflectivity: {}", current_value);
+                        return Ok(());
                         // If there is a ring, test its color
                         if accept_color.reflectivity().contains(&current_value) {
                             debug!("ring color accepted");
@@ -126,11 +127,17 @@ impl IntakeInner {
                 }
             }
             IntakeState::Stop => {
-                let current_value = self
+                if self
                     .partial_line_tracker
                     .reflectivity()
-                    .context(LineTrackerPortSnafu)?;
-                if current_value > RING_THRESHOLD {
+                    .context(LineTrackerPortSnafu)?
+                    > RING_THRESHOLD
+                    || self
+                        .lady_brown_line_tracker
+                        .reflectivity()
+                        .context(LineTrackerPortSnafu)?
+                        > RING_THRESHOLD
+                {
                     self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
                 } else {
                     self.motor.set_voltage(0.0).context(MotorSnafu)?;
@@ -208,6 +215,14 @@ impl Intake {
                 reject_time: None,
             },
             Direction::Reverse => IntakeState::Reverse,
+        };
+    }
+
+    pub async fn run_forward_accept(&self, color: RingColor) {
+        let mut inner = self.0.lock().await;
+        inner.state = IntakeState::Forward {
+            accept: Some(color),
+            reject_time: None,
         };
     }
 }

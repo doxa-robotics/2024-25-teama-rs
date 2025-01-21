@@ -50,7 +50,10 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             .context(DrivetrainSnafu)?;
 
         if state.button_r1.is_now_pressed() {
-            robot.intake.run(Direction::Forward).await;
+            robot
+                .intake
+                .run_forward_accept(crate::subsystems::intake::RingColor::Blue)
+                .await;
         }
         if state.button_l1.is_now_pressed() {
             robot.intake.run(Direction::Reverse).await;
@@ -70,7 +73,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
                     let intake = robot.intake.clone();
                     spawn(async move {
                         intake.run(Direction::Forward).await;
-                        sleep(Duration::from_millis(200)).await;
+                        // sleep(Duration::from_millis(200)).await;
                         arm.set_state(ArmState::MaxExpansion).await;
                         sleep(Duration::from_millis(300)).await;
                         intake.stop().await;

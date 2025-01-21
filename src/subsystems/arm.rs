@@ -107,7 +107,7 @@ impl Arm {
         Ok(())
     }
 
-    pub fn spawn_update(&self) {
+    pub fn task(&self) {
         let inner = self.0.clone();
         spawn(async move {
             loop {
