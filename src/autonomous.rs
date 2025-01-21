@@ -12,7 +12,7 @@ pub mod five_ring;
 pub mod left_autonomous;
 pub mod new_auton;
 pub mod noop;
-pub mod right_autonomous;
+pub mod right_autonomous_revised;
 pub mod skills;
 pub mod test;
 
