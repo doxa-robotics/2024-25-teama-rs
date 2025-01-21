@@ -45,7 +45,9 @@ impl AutonRoutine<Robot> for Skills {
         sleep(Duration::from_millis(500)).await;
         // Drive backward 72cm
         robot.drivetrain.drive_for(72.0).await?;
-
+        // Turn to 30 degrees
+        robot.drivetrain.turn_to(30.0).await?;
+        robot.intake.stop().await;
 
         //---------------------------------------------------------------
         // Turn the intake off
