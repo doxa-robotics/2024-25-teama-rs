@@ -10,6 +10,7 @@ use vexide::{
 };
 
 #[derive(Debug, Clone, Copy)]
+#[allow(unused)]
 pub enum RingColor {
     Red,
     Blue,
@@ -85,7 +86,6 @@ impl IntakeInner {
                         .context(LineTrackerPortSnafu)?;
                     if current_value > RING_THRESHOLD {
                         debug!("ring accepted, reflectivity: {}", current_value);
-                        return Ok(());
                         // If there is a ring, test its color
                         if accept_color.reflectivity().contains(&current_value) {
                             debug!("ring color accepted");
