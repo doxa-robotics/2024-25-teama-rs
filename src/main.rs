@@ -1,6 +1,7 @@
 #![no_main]
 #![no_std]
 #![feature(never_type)]
+#![feature(let_chains)]
 
 extern crate alloc;
 
@@ -9,7 +10,7 @@ mod opcontrol;
 mod subsystems;
 mod utils;
 
-use alloc::{string::ToString, vec};
+use alloc::{string::ToString, sync::Arc, vec};
 use core::time::Duration;
 
 use doxa_selector::{CompeteWithSelector, CompeteWithSelectorExt};
@@ -22,7 +23,7 @@ use subsystems::{
     intake::Intake,
 };
 use utils::{logger, motor_group::MotorGroup};
-use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
+use vexide::{core::sync::Mutex, prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 
 struct Robot {
     controller: Controller,
@@ -98,40 +99,43 @@ impl CompeteWithSelector for Robot {
 async fn main(peripherals: Peripherals) {
     logger::init().expect("failed to initialize logger");
 
+    let left_motors = Arc::new(Mutex::new(MotorGroup::from_ports(
+        vec![
+            (peripherals.port_12, true),
+            (peripherals.port_14, true),
+            (peripherals.port_16, true),
+        ],
+        Gearset::Blue,
+    )));
+    let right_motors = Arc::new(Mutex::new(MotorGroup::from_ports(
+        vec![
+            (peripherals.port_7, false),
+            (peripherals.port_8, false),
+            (peripherals.port_17, false),
+        ],
+        Gearset::Blue,
+    )));
+    let inertial = Arc::new(Mutex::new(InertialSensor::new(peripherals.port_4)));
+
     let robot = Robot {
         controller: peripherals.primary_controller,
-
         drivetrain: Drivetrain::new(
-            MotorGroup::from_ports(
-                vec![
-                    (peripherals.port_12, true),
-                    (peripherals.port_14, true),
-                    (peripherals.port_16, true),
-                ],
-                Gearset::Blue,
-            ),
-            MotorGroup::from_ports(
-                vec![
-                    (peripherals.port_7, false),
-                    (peripherals.port_8, false),
-                    (peripherals.port_17, false),
-                ],
-                Gearset::Blue,
-            ),
-            InertialSensor::new(peripherals.port_4),
+            left_motors.clone(),
+            right_motors.clone(),
+            inertial.clone(),
             DrivetrainConfig {
-                drive_p: 0.06,
+                drive_p: 0.065,
                 drive_i: 0.0,
-                drive_d: 0.3,
+                drive_d: 0.48,
                 drive_tolerance: 5.0,
 
-                turning_p: 0.4,
+                turning_p: 0.28,
                 turning_i: 0.0,
-                turning_d: 0.2,
+                turning_d: 0.7,
                 turning_tolerance: 5.0,
 
                 tolerance_velocity: 10.0,
-                timeout: Duration::from_secs(1),
+                timeout: Duration::from_millis(500),
                 wheel_circumference: 165.0,
             },
         ),
@@ -139,6 +143,7 @@ async fn main(peripherals: Peripherals) {
         intake: Intake::new(
             Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
             AdiLineTracker::new(peripherals.adi_b),
+            AdiLineTracker::new(peripherals.adi_c),
         ),
         clamp: Clamp::new(AdiDigitalOut::with_initial_level(
             peripherals.adi_a,
@@ -164,11 +169,14 @@ async fn main(peripherals: Peripherals) {
     info!("Intake temp: {:?}", robot.intake.temperature());
 
     info!("starting subsystem background tasks");
-    robot.arm.spawn_update();
-    robot.intake.spawn_update();
+    robot.arm.task();
+    robot.intake.task();
 
     info!("entering competing");
     robot
-        .compete_with_selector(peripherals.display, Some(&autonomous::skills::Skills))
+        .compete_with_selector(
+            peripherals.display,
+            Some(&autonomous::stake_side::RedStakeSide),
+        )
         .await;
 }

@@ -1,35 +1,56 @@
 use alloc::sync::Arc;
+use core::time::Duration;
 
-use log::error;
+use log::{debug, error};
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{dbg, sync::Mutex, time::Instant},
+    core::{sync::Mutex, time::Instant},
     devices::{smart::motor::MotorError, PortError},
     prelude::{sleep, spawn, AdiLineTracker, BrakeMode, Direction, Motor},
 };
 
 #[derive(Debug, Clone, Copy)]
+#[allow(unused)]
+pub enum RingColor {
+    Red,
+    Blue,
+}
+
+impl RingColor {
+    fn reflectivity(&self) -> core::ops::Range<f64> {
+        match self {
+            RingColor::Red => 0.3..0.5,
+            RingColor::Blue => 0.5..1.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum IntakeState {
-    Forward,
+    Forward {
+        accept: Option<RingColor>,
+        reject_time: Option<Instant>,
+    },
     Reverse,
     PartialIntake {
         start: Instant,
     },
     ArmIntake {
         start: Instant,
-        settling_start: Option<Instant>,
     },
     Stop,
 }
 
 const RING_THRESHOLD: f64 = 0.3;
 const TIMEOUT: u128 = 3000;
-const ARM_INTAKE_SETTLING_TIME: u128 = 600;
+const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(500);
+const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(1000);
 
 #[derive(Debug)]
 pub struct IntakeInner {
     motor: Motor,
-    line_tracker: AdiLineTracker,
+    partial_line_tracker: AdiLineTracker,
+    lady_brown_line_tracker: AdiLineTracker,
     state: IntakeState,
 }
 
@@ -44,31 +65,46 @@ pub enum IntakeError {
 impl IntakeInner {
     async fn update(&mut self) -> Result<(), IntakeError> {
         match self.state {
-            IntakeState::Forward => {
-                self.motor
-                    .set_voltage(self.motor.max_voltage())
-                    .context(MotorSnafu)?;
+            IntakeState::Forward {
+                accept,
+                reject_time,
+            } => {
+                if let Some(reject_time) = reject_time
+                    && (RING_REJECT_STOP_TIME..RING_REJECT_RESTART_TIME)
+                        .contains(&reject_time.elapsed())
+                {
+                    self.motor.brake(BrakeMode::Brake).context(MotorSnafu)?;
+                } else {
+                    self.motor
+                        .set_voltage(self.motor.max_voltage())
+                        .context(MotorSnafu)?;
+                }
+                if let Some(accept_color) = accept {
+                    let current_value = self
+                        .partial_line_tracker
+                        .reflectivity()
+                        .context(LineTrackerPortSnafu)?;
+                    if current_value > RING_THRESHOLD {
+                        debug!("ring accepted, reflectivity: {}", current_value);
+                        // If there is a ring, test its color
+                        if accept_color.reflectivity().contains(&current_value) {
+                            debug!("ring color accepted");
+                        } else {
+                            debug!("ring color rejected");
+                            self.state = IntakeState::Forward {
+                                accept,
+                                reject_time: Some(Instant::now()),
+                            };
+                        }
+                    }
+                }
             }
             IntakeState::Reverse => {
                 self.motor
                     .set_voltage(-self.motor.max_voltage())
                     .context(MotorSnafu)?;
             }
-            IntakeState::PartialIntake { start }
-            | IntakeState::ArmIntake {
-                start,
-                settling_start: _,
-            } => {
-                if let IntakeState::ArmIntake {
-                    start: _,
-                    settling_start: Some(settling_start),
-                } = self.state
-                {
-                    if settling_start.elapsed().as_millis() > ARM_INTAKE_SETTLING_TIME {
-                        self.state = IntakeState::Stop;
-                    }
-                    return Ok(());
-                }
+            IntakeState::PartialIntake { start } | IntakeState::ArmIntake { start } => {
                 if start.elapsed().as_millis() > TIMEOUT {
                     error!("Partially intaking timeout");
                     self.state = IntakeState::Stop;
@@ -76,35 +112,32 @@ impl IntakeInner {
                     self.motor
                         .set_voltage(self.motor.max_voltage())
                         .context(MotorSnafu)?;
-                    let current_value = self
-                        .line_tracker
-                        .reflectivity()
-                        .context(LineTrackerPortSnafu)?;
+                    let current_value = if matches!(self.state, IntakeState::PartialIntake { .. }) {
+                        self.partial_line_tracker
+                            .reflectivity()
+                            .context(LineTrackerPortSnafu)?
+                    } else {
+                        self.lady_brown_line_tracker
+                            .reflectivity()
+                            .context(LineTrackerPortSnafu)?
+                    };
                     if current_value > RING_THRESHOLD {
-                        match self.state {
-                            IntakeState::PartialIntake { start: _ } => {
-                                self.state = IntakeState::Stop;
-                            }
-                            IntakeState::ArmIntake {
-                                start,
-                                settling_start: _,
-                            } => {
-                                self.state = IntakeState::ArmIntake {
-                                    start,
-                                    settling_start: Some(Instant::now()),
-                                };
-                            }
-                            _ => unreachable!(),
-                        }
+                        self.state = IntakeState::Stop;
                     }
                 }
             }
             IntakeState::Stop => {
-                let current_value = self
-                    .line_tracker
+                if self
+                    .partial_line_tracker
                     .reflectivity()
-                    .context(LineTrackerPortSnafu)?;
-                if current_value > RING_THRESHOLD {
+                    .context(LineTrackerPortSnafu)?
+                    > RING_THRESHOLD
+                    || self
+                        .lady_brown_line_tracker
+                        .reflectivity()
+                        .context(LineTrackerPortSnafu)?
+                        > RING_THRESHOLD
+                {
                     self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
                 } else {
                     self.motor.set_voltage(0.0).context(MotorSnafu)?;
@@ -119,10 +152,15 @@ impl IntakeInner {
 pub struct Intake(Arc<Mutex<IntakeInner>>);
 
 impl Intake {
-    pub fn new(motor: Motor, line_tracker: AdiLineTracker) -> Self {
+    pub fn new(
+        motor: Motor,
+        partial_line_tracker: AdiLineTracker,
+        lady_brown_line_tracker: AdiLineTracker,
+    ) -> Self {
         Self(Arc::new(Mutex::new(IntakeInner {
             motor,
-            line_tracker,
+            partial_line_tracker,
+            lady_brown_line_tracker,
             state: IntakeState::Stop,
         })))
     }
@@ -134,7 +172,7 @@ impl Intake {
         }
     }
 
-    pub fn spawn_update(&self) {
+    pub fn task(&self) {
         let inner = self.0.clone();
         spawn(async move {
             loop {
@@ -166,23 +204,25 @@ impl Intake {
         let mut inner = self.0.lock().await;
         inner.state = IntakeState::ArmIntake {
             start: Instant::now(),
-            settling_start: None,
         };
     }
 
     pub async fn run(&self, direction: Direction) {
         let mut inner = self.0.lock().await;
         inner.state = match direction {
-            Direction::Forward => IntakeState::Forward,
+            Direction::Forward => IntakeState::Forward {
+                accept: None,
+                reject_time: None,
+            },
             Direction::Reverse => IntakeState::Reverse,
         };
     }
 
-    pub async fn state(&self) -> IntakeState {
-        self.0.lock().await.state
-    }
-
-    pub async fn set_state(&self, state: IntakeState) {
-        self.0.lock().await.state = state;
+    pub async fn run_forward_accept(&self, color: RingColor) {
+        let mut inner = self.0.lock().await;
+        inner.state = IntakeState::Forward {
+            accept: Some(color),
+            reject_time: None,
+        };
     }
 }

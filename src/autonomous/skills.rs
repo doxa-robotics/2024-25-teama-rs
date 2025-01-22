@@ -123,6 +123,7 @@ impl AutonRoutine<Robot> for Skills {
         // Should have gone on
         sleep(Duration::from_millis(500)).await;
         robot.arm.set_state(ArmState::Initial).await;
+        return Ok(());
         // Turn to 25 degrees
         robot.drivetrain.turn_to(25.0).await?;
         // Drive forward 75cm while intaking

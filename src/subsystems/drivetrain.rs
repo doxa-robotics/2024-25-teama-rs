@@ -4,12 +4,14 @@ use core::time::Duration;
 use log::{debug, info, warn};
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{dbg, println, sync::Mutex, time::Instant},
+    core::{sync::Mutex, time::Instant},
     devices::smart::{imu::InertialError, motor::MotorError},
     prelude::{sleep, spawn, Float, InertialSensor, Motor, SmartDevice},
 };
 
 use super::super::utils::motor_group::MotorGroup;
+
+const SIGN_ERROR_CHECK_DELAY: Duration = Duration::from_millis(100);
 
 #[derive(Debug, Snafu)]
 pub enum DrivetrainError {
@@ -67,42 +69,48 @@ pub struct DrivetrainConfig {
 /// using a PID controller from the Rust `pid` crate.
 #[derive(Debug)]
 pub struct Drivetrain {
-    left: MotorGroup,
-    right: MotorGroup,
+    left: Arc<Mutex<MotorGroup>>,
+    right: Arc<Mutex<MotorGroup>>,
     inertial: Arc<Mutex<InertialSensor>>,
     config: DrivetrainConfig,
     negate_turns: bool,
+    negate_turn_output: bool,
 }
 
 impl Drivetrain {
     /// Create a new Drivetrain
     pub fn new(
-        left: MotorGroup,
-        right: MotorGroup,
-        inertial: InertialSensor,
+        left: Arc<Mutex<MotorGroup>>,
+        right: Arc<Mutex<MotorGroup>>,
+        inertial: Arc<Mutex<InertialSensor>>,
         config: DrivetrainConfig,
     ) -> Drivetrain {
         Drivetrain {
             left,
             right,
-            inertial: Arc::new(Mutex::new(inertial)),
+            inertial,
             config,
             negate_turns: false,
+            negate_turn_output: false,
         }
+    }
+
+    pub async fn set_voltages(&mut self, left: f64, right: f64) -> Result<(), DrivetrainError> {
+        self.left
+            .lock()
+            .await
+            .set_voltage(left)
+            .context(MotorSnafu)?;
+        self.right
+            .lock()
+            .await
+            .set_voltage(right)
+            .context(MotorSnafu)?;
+        Ok(())
     }
 
     pub fn set_negate_turns(&mut self, negate: bool) {
         self.negate_turns = negate;
-    }
-
-    /// Returns a mutable reference to the left motors
-    pub fn left(&mut self) -> &mut MotorGroup {
-        &mut self.left
-    }
-
-    /// Returns a mutable reference to the right motors
-    pub fn right(&mut self) -> &mut MotorGroup {
-        &mut self.right
     }
 
     /// Is the inertial sensor calibrating?
@@ -151,46 +159,55 @@ impl Drivetrain {
     ) -> Result<(), DrivetrainError> {
         let drive_start = Instant::now();
 
-        // Get the initial position
-        self.left.reset_position().context(MotorSnafu)?;
-        self.right.reset_position().context(MotorSnafu)?;
-
-        // since we just reset the position, the distance is 0 (in mm)
-        let mut left_distance: f64 = self.left.position().context(MotorSnafu)?.as_revolutions()
+        let mut left_distance: f64 = self
+            .left
+            .lock()
+            .await
+            .position()
+            .context(MotorSnafu)?
+            .as_revolutions()
             * self.config.wheel_circumference;
-        let mut right_distance: f64 = self.right.position().context(MotorSnafu)?.as_revolutions()
+        let mut right_distance: f64 = self
+            .right
+            .lock()
+            .await
+            .position()
+            .context(MotorSnafu)?
+            .as_revolutions()
             * self.config.wheel_circumference;
-        let mut left_velocity = self.left.velocity().context(MotorSnafu)?;
-        let mut right_velocity = self.right.velocity().context(MotorSnafu)?;
+        let mut left_velocity = self.left.lock().await.velocity().context(MotorSnafu)?;
+        let mut right_velocity = self.right.lock().await.velocity().context(MotorSnafu)?;
 
         let mut left_controller: pid::Pid<f64> =
-            pid::Pid::new(target_distance, Motor::V5_MAX_VOLTAGE);
+            pid::Pid::new(left_distance + target_distance, Motor::V5_MAX_VOLTAGE);
         left_controller
             .p(self.config.drive_p * p_multiplier, f64::MAX)
             .i(self.config.drive_i, f64::MAX)
             .d(self.config.drive_d, f64::MAX);
         let mut right_controller: pid::Pid<f64> =
-            pid::Pid::new(target_distance, Motor::V5_MAX_VOLTAGE);
+            pid::Pid::new(right_distance + target_distance, Motor::V5_MAX_VOLTAGE);
         right_controller
             .p(self.config.drive_p * p_multiplier, f64::MAX)
             .i(self.config.drive_i, f64::MAX)
             .d(self.config.drive_d, f64::MAX);
 
         let mut last_moving_instant = Instant::now();
-        while ((left_distance - target_distance).abs() >= self.config.drive_tolerance
-            || (right_distance - target_distance).abs() >= self.config.drive_tolerance)
+        while ((left_distance - left_controller.setpoint).abs() >= self.config.drive_tolerance
+            || (right_distance - right_controller.setpoint).abs() >= self.config.drive_tolerance)
             || (left_velocity.abs() >= self.config.tolerance_velocity
                 || right_velocity.abs() >= self.config.tolerance_velocity)
         {
+            let mut left = self.left.lock().await;
+            let mut right = self.right.lock().await;
             // Get the current position
-            left_distance = self.left.position().context(MotorSnafu)?.as_revolutions()
+            left_distance = left.position().context(MotorSnafu)?.as_revolutions()
                 * self.config.wheel_circumference;
-            right_distance = self.right.position().context(MotorSnafu)?.as_revolutions()
+            right_distance = right.position().context(MotorSnafu)?.as_revolutions()
                 * self.config.wheel_circumference;
 
             // Get the current velocity
-            left_velocity = self.left.velocity().context(MotorSnafu)?;
-            right_velocity = self.right.velocity().context(MotorSnafu)?;
+            left_velocity = left.velocity().context(MotorSnafu)?;
+            right_velocity = right.velocity().context(MotorSnafu)?;
 
             if left_velocity.abs() > self.config.tolerance_velocity
                 || right_velocity.abs() > self.config.tolerance_velocity
@@ -199,30 +216,42 @@ impl Drivetrain {
             }
             if last_moving_instant.elapsed() > self.config.timeout {
                 warn!("Drivetrain.drive_for timed out");
+                drop(left);
+                drop(right);
                 break;
             }
 
             // Calculate the output
             let left_output = left_controller.next_control_output(left_distance).output;
             let right_output = right_controller.next_control_output(right_distance).output;
+            debug!(
+                "left distance: {:?} / right distance: {:?} / left output: {:?} / right output: {:?} / target distance: {:?}",
+                left_distance, right_distance, left_output, right_output, target_distance
+            );
 
             // Set the output
-            self.left
-                .set_voltage(left_output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+            left.set_voltage(left_output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
                 .context(MotorSnafu)?;
-            self.right
+            right
                 .set_voltage(right_output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
                 .context(MotorSnafu)?;
+
+            drop(left);
+            drop(right);
 
             sleep(Motor::UPDATE_INTERVAL).await;
         }
 
         // brake the left and right motors
         self.left
-            .brake(vexide::prelude::BrakeMode::Hold)
+            .lock()
+            .await
+            .brake(vexide::prelude::BrakeMode::Brake)
             .context(MotorSnafu)?;
         self.right
-            .brake(vexide::prelude::BrakeMode::Hold)
+            .lock()
+            .await
+            .brake(vexide::prelude::BrakeMode::Brake)
             .context(MotorSnafu)?;
 
         log::info!(
@@ -242,15 +271,16 @@ impl Drivetrain {
     /// - `target_angle_delta`: The angle to turn by in radians
     pub async fn turn_for(&mut self, target_angle_delta: f64) -> Result<(), DrivetrainError> {
         let turn_start = Instant::now();
+        let mut has_corrected_sign_error = false;
 
         let inertial = self.inertial.lock().await;
 
         // Get the initial position
-        let mut heading = inertial.rotation().context(InertialSnafu)?;
+        let mut heading = -inertial.rotation().context(InertialSnafu)?;
         let target_heading = heading - target_angle_delta;
 
-        let mut left_velocity = self.left.velocity().context(MotorSnafu)?;
-        let mut right_velocity = self.right.velocity().context(MotorSnafu)?;
+        let mut left_velocity = self.left.lock().await.velocity().context(MotorSnafu)?;
+        let mut right_velocity = self.right.lock().await.velocity().context(MotorSnafu)?;
 
         let mut controller: pid::Pid<f64> = pid::Pid::new(target_heading, Motor::V5_MAX_VOLTAGE);
         controller
@@ -259,16 +289,30 @@ impl Drivetrain {
             .d(self.config.turning_d, f64::MAX);
 
         let mut last_moving_instant = Instant::now();
+        let initial_error = (heading - target_heading).abs();
         while (heading - target_heading).abs() >= self.config.turning_tolerance
             || (left_velocity.abs() >= self.config.tolerance_velocity
                 || right_velocity.abs() >= self.config.tolerance_velocity)
         {
+            let mut left = self.left.lock().await;
+            let mut right = self.right.lock().await;
+
+            // Check if the sign of the output is incorrect (i.e., the robot is turning the wrong way)
+            // FIXME: this is a hacky way to fix the sign error, but it works for now :(
+            if !has_corrected_sign_error && turn_start.elapsed() > SIGN_ERROR_CHECK_DELAY {
+                if (heading - target_heading).abs() > initial_error {
+                    self.negate_turn_output = !self.negate_turn_output;
+                    warn!("Drivetrain.turn_for correcting sign error by negating output as error has increased in 100ms");
+                }
+                has_corrected_sign_error = true;
+            }
+
             // Get the current position
-            heading = inertial.rotation().context(InertialSnafu)?;
+            heading = -inertial.rotation().context(InertialSnafu)?;
 
             // Get the current velocity
-            left_velocity = self.left.velocity().context(MotorSnafu)?;
-            right_velocity = self.right.velocity().context(MotorSnafu)?;
+            left_velocity = left.velocity().context(MotorSnafu)?;
+            right_velocity = right.velocity().context(MotorSnafu)?;
 
             if left_velocity.abs() > self.config.tolerance_velocity
                 || right_velocity.abs() > self.config.tolerance_velocity
@@ -277,31 +321,50 @@ impl Drivetrain {
             }
             if last_moving_instant.elapsed() > self.config.timeout {
                 warn!("Drivetrain.turn_for timed out");
+                drop(left);
+                drop(right);
                 break;
             }
 
             // Calculate the output
-            let output = controller.next_control_output(heading).output;
+            let mut output = controller.next_control_output(heading).output;
+            if self.negate_turn_output {
+                // FIXME: this is still hacky
+                output *= -1.0;
+            }
 
-            debug!("heading: {:?}", inertial.heading().unwrap_or(0.0));
+            debug!(
+                "heading: {:?} / rotation: {:?} / output: {:?} / target heading: {:?} / physical orientation: {:?}",
+                inertial.heading().unwrap_or(0.0),
+                heading,
+                output,
+                target_heading,
+                inertial.physical_orientation()
+            );
 
             // Set the output
-            self.left
+            left.set_voltage(-output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
+                .context(MotorSnafu)?;
+            right
                 .set_voltage(output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
                 .context(MotorSnafu)?;
-            self.right
-                .set_voltage(-output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE))
-                .context(MotorSnafu)?;
+
+            drop(left);
+            drop(right);
 
             sleep(Motor::UPDATE_INTERVAL).await;
         }
 
         // brake the left and right motors
         self.left
-            .brake(vexide::prelude::BrakeMode::Hold)
+            .lock()
+            .await
+            .brake(vexide::prelude::BrakeMode::Brake)
             .context(MotorSnafu)?;
         self.right
-            .brake(vexide::prelude::BrakeMode::Hold)
+            .lock()
+            .await
+            .brake(vexide::prelude::BrakeMode::Brake)
             .context(MotorSnafu)?;
 
         log::info!(
@@ -314,12 +377,12 @@ impl Drivetrain {
 
     /// Turn the robot to a certain angle, using turn_for under the hood.
     pub async fn turn_to(&mut self, mut target_angle: f64) -> Result<(), DrivetrainError> {
-        if !self.negate_turns {
+        if self.negate_turns {
             target_angle = -target_angle;
         }
 
         let inertial = self.inertial.lock().await;
-        let current_angle = -inertial.heading().context(InertialSnafu)?;
+        let current_angle = inertial.heading().context(InertialSnafu)?;
         drop(inertial);
         // Calculate the angle delta for the closest turn
         let mut angle_delta = target_angle - current_angle;
@@ -345,9 +408,9 @@ impl Drivetrain {
     }
 
     pub fn temperature(&self) -> f64 {
-        let left_temp = self.left.temperature();
-        let right_temp = self.right.temperature();
-        if left_temp.is_err() || right_temp.is_err() {
+        let left_temp = self.left.try_lock().and_then(|x| x.temperature().ok());
+        let right_temp = self.right.try_lock().and_then(|x| x.temperature().ok());
+        if left_temp.is_none() || right_temp.is_none() {
             return 0.0;
         }
         (left_temp.unwrap() + right_temp.unwrap()) / 2.0
