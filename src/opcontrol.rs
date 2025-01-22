@@ -50,10 +50,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             .context(DrivetrainSnafu)?;
 
         if state.button_r1.is_now_pressed() {
-            robot
-                .intake
-                .run_forward_accept(crate::subsystems::intake::RingColor::Blue)
-                .await;
+            robot.intake.run(Direction::Forward).await;
         }
         if state.button_l1.is_now_pressed() {
             robot.intake.run(Direction::Reverse).await;
