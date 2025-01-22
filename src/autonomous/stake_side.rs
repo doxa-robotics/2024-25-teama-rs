@@ -24,8 +24,8 @@ impl AutonRoutine<Robot> for StakeSide {
         //turn
         robot.drivetrain.turn_to(150.0).await?;
         // Move  20cm
-        robot.drivetrain.drive_for(-350.0).await?;
-        robot.drivetrain.drive_for(-70.0).await?;
+        robot.drivetrain.drive_for(-340.0).await?;
+        robot.drivetrain.drive_for(-85.0).await?;
         //clamp
         robot.clamp.clamp()?;
         sleep(Duration::from_millis(500)).await;
@@ -52,7 +52,7 @@ impl AutonRoutine<Robot> for StakeSide {
         sleep(Duration::from_millis(500)).await;
         robot.drivetrain.turn_to(-65.0).await?;
         robot.intake.run(Direction::Forward).await;
-        robot.drivetrain.drive_for(520.0).await?;
+        robot.drivetrain.drive_for(510.0).await?;
         sleep(Duration::from_millis(500)).await;
         robot.intake.stop().await;
         Ok(())
