@@ -125,7 +125,7 @@ async fn main(peripherals: Peripherals) {
             inertial.clone(),
             DrivetrainConfig {
                 drive_p: 0.065,
-                drive_i: 0.00015,
+                drive_i: 0.0,
                 drive_d: 0.48,
                 drive_tolerance: 5.0,
 
@@ -174,6 +174,9 @@ async fn main(peripherals: Peripherals) {
 
     info!("entering competing");
     robot
-        .compete_with_selector(peripherals.display, Some(&autonomous::test::Test))
+        .compete_with_selector(
+            peripherals.display,
+            Some(&autonomous::stake_side::RedStakeSide),
+        )
         .await;
 }
