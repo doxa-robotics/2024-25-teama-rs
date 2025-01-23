@@ -115,9 +115,21 @@ impl AutonRoutine<Robot> for Skills {
         robot.drivetrain.drive_for(-400.0).await?;
         robot.clamp.unclam().await?;
         // move
-        robot.drivetrain.drive_for(1400.0).await?;
+        robot.drivetrain.drive_for(1000.0).await?;
+        robot.intake.run(Direction::Forward).await;
+        robot.drivetrain.drive_for(400.0).await?;
 
-
+        //------------------------side stake 2------------------//
+        // Turn to 90 degrees
+        robot.drivetrain.turn_to(-90.0).await?; 
+        //drive forawrd
+        robot.drivetrain.drive_for(100.0).await?;
+        /////////////////////////////
+        //drive forawrd
+        robot.drivetrain.drive_for(-100.0).await?;
+        // Turn to 30 degrees
+        robot.drivetrain.turn_to(-90.0).await?; 
+        
 
 
 
