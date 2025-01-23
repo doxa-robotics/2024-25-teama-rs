@@ -8,11 +8,11 @@ use doxa_selector::AutonRoutine;
 
 use crate::Robot;
 
-pub mod cluster_side;
+pub mod negative;
 pub mod noop;
 pub mod skills;
 // pub mod skills_revised;
-pub mod stake_side;
+pub mod positive;
 pub mod test;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -41,11 +41,11 @@ pub fn autonomous_routes<'a>(
     let mut map: BTreeMap<Category, &[&dyn AutonRoutine<Robot, Return = Return>]> = BTreeMap::new();
     map.insert(
         Category::Red,
-        &[&stake_side::RedStakeSide, &cluster_side::RedClusterSide],
+        &[&positive::RedPositive, &negative::RedNegative],
     );
     map.insert(
         Category::Blue,
-        &[&stake_side::BlueStakeSide, &cluster_side::BlueClusterSide],
+        &[&positive::BluePositive, &negative::BlueNegative],
     );
     map.insert(Category::Skills, &[&skills::Skills]);
     map.insert(Category::Test, &[&test::Test, &noop::Noop]);

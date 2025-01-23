@@ -7,10 +7,10 @@ use vexide::prelude::*;
 
 use crate::Robot;
 
-struct StakeSide;
+struct Positive;
 
 #[async_trait]
-impl AutonRoutine<Robot> for StakeSide {
+impl AutonRoutine<Robot> for Positive {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
@@ -67,5 +67,5 @@ impl AutonRoutine<Robot> for StakeSide {
     }
 }
 
-super::red_auton!(RedStakeSide, StakeSide, "Stake side");
-super::blue_auton!(BlueStakeSide, StakeSide, "Stake side");
+super::red_auton!(RedPositive, Positive, "Positive (+)");
+super::blue_auton!(BluePositive, Positive, "Positive (+)");

@@ -7,10 +7,10 @@ use vexide::prelude::*;
 
 use crate::Robot;
 
-struct ClusterSide;
+struct Negative;
 
 #[async_trait]
-impl AutonRoutine<Robot> for ClusterSide {
+impl AutonRoutine<Robot> for Negative {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
@@ -54,5 +54,5 @@ impl AutonRoutine<Robot> for ClusterSide {
     }
 }
 
-super::red_auton!(RedClusterSide, ClusterSide, "Cluster side");
-super::blue_auton!(BlueClusterSide, ClusterSide, "Cluster side");
+super::red_auton!(RedNegative, Negative, "Negative (-)");
+super::blue_auton!(BlueNegative, Negative, "Negative (-)");
