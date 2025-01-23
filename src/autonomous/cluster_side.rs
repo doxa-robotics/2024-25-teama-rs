@@ -7,10 +7,10 @@ use vexide::prelude::*;
 
 use crate::Robot;
 
-struct NewAuton;
+struct ClusterSide;
 
 #[async_trait]
-impl AutonRoutine<Robot> for NewAuton {
+impl AutonRoutine<Robot> for ClusterSide {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
@@ -48,9 +48,9 @@ impl AutonRoutine<Robot> for NewAuton {
     }
 
     fn description(&self) -> &'static str {
-        "It's 5:30am and I'm tired"
+        "Parallel to line, approaching center"
     }
 }
 
-super::red_auton!(RedNewAuton, NewAuton, "New Auton");
-super::blue_auton!(BlueNewAuton, NewAuton, "New Auton");
+super::red_auton!(RedClusterSide, ClusterSide, "Cluster side");
+super::blue_auton!(BlueClusterSide, ClusterSide, "Cluster side");
