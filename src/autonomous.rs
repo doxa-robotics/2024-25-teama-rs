@@ -17,9 +17,9 @@ pub mod test;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Category {
-    Skills,
     Red,
     Blue,
+    Skills,
     Test,
 }
 
