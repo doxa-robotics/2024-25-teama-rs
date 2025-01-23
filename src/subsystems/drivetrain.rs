@@ -398,11 +398,14 @@ impl Drivetrain {
         self.turn_for(angle_delta).await
     }
 
-    pub async fn reset_inertial(&mut self, heading: f64) -> Result<(), DrivetrainError> {
+    pub async fn reset_inertial(&mut self, mut heading: f64) -> Result<(), DrivetrainError> {
+        if self.negate_turns {
+            heading = -heading;
+        }
         self.inertial
             .lock()
             .await
-            .set_heading(heading)
+            .set_heading(heading.rem_euclid(360.0))
             .context(InertialSnafu)?;
         Ok(())
     }
