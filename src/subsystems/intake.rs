@@ -45,6 +45,7 @@ const RING_THRESHOLD: f64 = 0.3;
 const TIMEOUT: u128 = 3000;
 const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(500);
 const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(1000);
+const LADY_BROWN_HOLD_DURATION: Duration = Duration::from_millis(3000);
 
 #[derive(Debug)]
 pub struct IntakeInner {
@@ -52,6 +53,7 @@ pub struct IntakeInner {
     partial_line_tracker: AdiLineTracker,
     lady_brown_line_tracker: AdiLineTracker,
     state: IntakeState,
+    lady_brown_line_tracker_start: Option<Instant>,
 }
 
 #[derive(Debug, Snafu)]
@@ -132,12 +134,20 @@ impl IntakeInner {
                     .reflectivity()
                     .context(LineTrackerPortSnafu)?
                     > RING_THRESHOLD
-                    || self
-                        .lady_brown_line_tracker
-                        .reflectivity()
-                        .context(LineTrackerPortSnafu)?
-                        > RING_THRESHOLD
                 {
+                    self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
+                } else if self
+                    .lady_brown_line_tracker
+                    .reflectivity()
+                    .context(LineTrackerPortSnafu)?
+                    > RING_THRESHOLD
+                    && (self.lady_brown_line_tracker_start.is_none()
+                        || self.lady_brown_line_tracker_start.unwrap().elapsed()
+                            < LADY_BROWN_HOLD_DURATION)
+                {
+                    if self.lady_brown_line_tracker_start.is_none() {
+                        self.lady_brown_line_tracker_start = Some(Instant::now());
+                    }
                     self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
                 } else {
                     self.motor.set_voltage(0.0).context(MotorSnafu)?;
@@ -162,7 +172,20 @@ impl Intake {
             partial_line_tracker,
             lady_brown_line_tracker,
             state: IntakeState::Stop,
+            lady_brown_line_tracker_start: None,
         })))
+    }
+
+    pub async fn is_ring_in_lady_brown(&self) -> bool {
+        let inner = self.0.lock().await;
+        inner.lady_brown_line_tracker.reflectivity().unwrap_or(0.0) > RING_THRESHOLD
+    }
+
+    pub async fn is_ring_released_in_lady_brown(&self) -> bool {
+        let inner = self.0.lock().await;
+        inner
+            .lady_brown_line_tracker_start
+            .is_some_and(|start| start.elapsed() > LADY_BROWN_HOLD_DURATION)
     }
 
     pub fn temperature(&self) -> f64 {

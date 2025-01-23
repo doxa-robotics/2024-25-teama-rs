@@ -68,16 +68,28 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
                 ArmState::Intake => {
                     let arm = robot.arm.clone();
                     let intake = robot.intake.clone();
+                    let should_sleep = robot.intake.is_ring_released_in_lady_brown().await;
                     spawn(async move {
                         intake.run(Direction::Forward).await;
-                        // sleep(Duration::from_millis(200)).await;
+                        if should_sleep {
+                            sleep(Duration::from_millis(200)).await;
+                        }
                         arm.set_state(ArmState::MaxExpansion).await;
                         sleep(Duration::from_millis(300)).await;
                         intake.stop().await;
                     })
                     .detach();
                 }
-                ArmState::MaxExpansion => robot.arm.set_state(ArmState::Initial).await,
+                ArmState::MaxExpansion => {
+                    robot
+                        .arm
+                        .set_state(if robot.intake.is_ring_in_lady_brown().await {
+                            ArmState::Intake
+                        } else {
+                            ArmState::Initial
+                        })
+                        .await
+                }
                 ArmState::Manual(_) => robot.arm.set_state(ArmState::Initial).await,
             }
         }
