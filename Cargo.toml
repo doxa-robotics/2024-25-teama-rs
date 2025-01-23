@@ -28,5 +28,5 @@ opt-level = "z"
 lto = true
 
 [features]
-default = []
+default = ["ui"]
 ui = ["doxa-selector/ui"]

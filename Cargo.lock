@@ -810,7 +810,7 @@ dependencies = [
 [[package]]
 name = "doxa-selector"
 version = "0.1.0"
-source = "git+https://github.com/doxa-robotics/doxa-selector-rs.git?branch=main#6eecd9a7055af8899fff1359a5b2aaae04d1671e"
+source = "git+https://github.com/doxa-robotics/doxa-selector-rs.git?branch=main#55a34e5923c929dea00cc66bd6f1603f54d8545b"
 dependencies = [
  "async-trait",
  "slint",
@@ -3434,7 +3434,7 @@ dependencies = [
 [[package]]
 name = "vexide-async"
 version = "0.1.7"
-source = "git+https://github.com/vexide/vexide.git?branch=test%2Fpatch-uploading#418ef9d76695e8f01a409f3e28c0b80208574d15"
+source = "git+https://github.com/vexide/vexide.git?branch=test%2Fpatch-uploading#badf96aa6e7bc6d4c530232ac41732ab0819779b"
 dependencies = [
  "async-task",
  "vex-sdk",
@@ -3445,7 +3445,7 @@ dependencies = [
 [[package]]
 name = "vexide-core"
 version = "0.5.1"
-source = "git+https://github.com/vexide/vexide.git?branch=test%2Fpatch-uploading#418ef9d76695e8f01a409f3e28c0b80208574d15"
+source = "git+https://github.com/vexide/vexide.git?branch=test%2Fpatch-uploading#badf96aa6e7bc6d4c530232ac41732ab0819779b"
 dependencies = [
  "bitflags 2.8.0",
  "futures-core",
@@ -3463,7 +3463,7 @@ dependencies = [
 [[package]]
 name = "vexide-devices"
 version = "0.5.1"
-source = "git+https://github.com/vexide/vexide.git?branch=test%2Fpatch-uploading#418ef9d76695e8f01a409f3e28c0b80208574d15"
+source = "git+https://github.com/vexide/vexide.git?branch=test%2Fpatch-uploading#badf96aa6e7bc6d4c530232ac41732ab0819779b"
 dependencies = [
  "bitflags 2.8.0",
  "mint",
