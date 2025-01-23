@@ -63,7 +63,7 @@ impl AutonRoutine<Robot> for StakeSide {
     }
 
     fn description(&self) -> &'static str {
-        "Stake side"
+        "Clamp forward; barely miss rings"
     }
 }
 

@@ -39,7 +39,6 @@ pub type Return = Result<(), Box<dyn Error>>;
 pub fn autonomous_routes<'a>(
 ) -> BTreeMap<Category, &'static [&'a dyn doxa_selector::AutonRoutine<Robot, Return = Return>]> {
     let mut map: BTreeMap<Category, &[&dyn AutonRoutine<Robot, Return = Return>]> = BTreeMap::new();
-    map.insert(Category::Skills, &[&skills::Skills]);
     map.insert(
         Category::Red,
         &[&stake_side::RedStakeSide, &cluster_side::RedClusterSide],
@@ -48,6 +47,7 @@ pub fn autonomous_routes<'a>(
         Category::Blue,
         &[&stake_side::BlueStakeSide, &cluster_side::BlueClusterSide],
     );
+    map.insert(Category::Skills, &[&skills::Skills]);
     map.insert(Category::Test, &[&test::Test, &noop::Noop]);
     map
 }
