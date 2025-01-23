@@ -7,10 +7,10 @@ use vexide::prelude::*;
 
 use crate::{subsystems::arm::ArmState, Robot};
 
-pub struct Skills;
+pub struct SkillsRevised;
 
 #[async_trait]
-impl AutonRoutine<Robot> for Skills {
+impl AutonRoutine<Robot> for SkillsRevised {
     type Return = super::Return;
 
     async fn run(&self, robot: &mut Robot) -> Self::Return {
@@ -24,7 +24,7 @@ impl AutonRoutine<Robot> for Skills {
         // Drive forward 40cm
         robot.drivetrain.drive_for(420.0).await?;
         // Turn right 90 degrees
-        robot.drivetrain.turn_to(-90.0).await?;
+        robot.drivetrain.turn_to(90.0).await?;
         // Clamp the goal
         robot.clamp.unclamp()?;
         // Drive backward 65cm
@@ -39,7 +39,7 @@ impl AutonRoutine<Robot> for Skills {
         // Drive forward 43cm
         robot.drivetrain.drive_for(430.0).await?;
         // Turn to 30 degrees
-        robot.drivetrain.turn_to(30.0).await?;
+        robot.drivetrain.turn_to(40.0).await?;
         // Drive 80cm
         robot.drivetrain.drive_for(800.0).await?;
         sleep(Duration::from_millis(500)).await;
@@ -65,14 +65,14 @@ impl AutonRoutine<Robot> for Skills {
         //------------------------------ corner---------------------//
 
         // Turn to 210 degrees
-        robot.drivetrain.turn_to(210.0).await?; 
+        robot.drivetrain.turn_to(210.0).await?;
         robot.intake.run(Direction::Forward).await;
         robot.drivetrain.drive_for(700.0).await?;
         // Turn to 180 degrees
-        robot.drivetrain.turn_to(180.0).await?; 
+        robot.drivetrain.turn_to(180.0).await?;
         robot.drivetrain.drive_for(720.0).await?;
         //turn
-        robot.drivetrain.turn_to(270.0).await?; 
+        robot.drivetrain.turn_to(270.0).await?;
         //push in to corner
         robot.drivetrain.drive_for(-250.0).await?;
         robot.clamp.unclamp()?;
@@ -82,7 +82,7 @@ impl AutonRoutine<Robot> for Skills {
         // move
         robot.drivetrain.drive_for(100.0).await?;
         //turn
-        robot.drivetrain.turn_to(135).await?; 
+        robot.drivetrain.turn_to(135.0).await?;
         // move
         robot.drivetrain.drive_for(-800.0).await?;
         robot.clamp.clamp()?;
@@ -91,29 +91,28 @@ impl AutonRoutine<Robot> for Skills {
         // move
         robot.drivetrain.drive_for(500.0).await?;
         //turn
-        robot.drivetrain.turn_to(-45).await?; 
+        robot.drivetrain.turn_to(-45.0).await?;
         // move
         robot.drivetrain.drive_for(760.0).await?;
         //turn
-        robot.drivetrain.turn_to(-130).await?; 
+        robot.drivetrain.turn_to(-130.0).await?;
         // move
         robot.drivetrain.drive_for(1700.0).await?;
 
-
         //------------------- Middle to corner--------------//
         //turn
-        robot.drivetrain.turn_to(00.0).await?; 
+        robot.drivetrain.turn_to(00.0).await?;
         // move
         robot.drivetrain.drive_for(720.0).await?;
         //turn
-        robot.drivetrain.turn_to(-150.0).await?; 
+        robot.drivetrain.turn_to(-150.0).await?;
         // move
         robot.drivetrain.drive_for(400.0).await?;
         //turn
         robot.drivetrain.turn_to(00.0).await?;
         robot.intake.stop().await;
         robot.drivetrain.drive_for(-400.0).await?;
-        robot.clamp.unclam().await?;
+        robot.clamp.unclamp()?;
         // move
         robot.drivetrain.drive_for(1000.0).await?;
         robot.intake.run(Direction::Forward).await;
@@ -122,14 +121,14 @@ impl AutonRoutine<Robot> for Skills {
 
         //------------------------side stake 2------------------//
         // Turn to 90 degrees
-        robot.drivetrain.turn_to(-90.0).await?; 
+        robot.drivetrain.turn_to(-90.0).await?;
         //drive forawrd
         robot.drivetrain.drive_for(100.0).await?;
         /////////////////////////////
         //drive forawrd
         robot.drivetrain.drive_for(-100.0).await?;
         // Turn to 30 degrees
-        robot.drivetrain.turn_to(30.0).await?; 
+        robot.drivetrain.turn_to(30.0).await?;
 
         //------------------------END------------------//
         robot.intake.run(Direction::Forward).await;
@@ -137,13 +136,7 @@ impl AutonRoutine<Robot> for Skills {
         robot.drivetrain.drive_for(850.0).await?;
         robot.intake.stop().await;
         // Turn
-        robot.drivetrain.turn_to(0.0).await?; 
-
-
-
-
-
-
+        robot.drivetrain.turn_to(0.0).await?;
 
         Ok(())
     }
