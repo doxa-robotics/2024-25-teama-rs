@@ -176,11 +176,6 @@ impl Intake {
         })))
     }
 
-    pub async fn is_ring_in_lady_brown(&self) -> bool {
-        let inner = self.0.lock().await;
-        inner.lady_brown_line_tracker.reflectivity().unwrap_or(0.0) > RING_THRESHOLD
-    }
-
     pub async fn is_ring_released_in_lady_brown(&self) -> bool {
         let inner = self.0.lock().await;
         inner

@@ -80,16 +80,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
                     })
                     .detach();
                 }
-                ArmState::MaxExpansion => {
-                    robot
-                        .arm
-                        .set_state(if robot.intake.is_ring_in_lady_brown().await {
-                            ArmState::Intake
-                        } else {
-                            ArmState::Initial
-                        })
-                        .await
-                }
+                ArmState::MaxExpansion => robot.arm.set_state(ArmState::Initial).await,
                 ArmState::Manual(_) => robot.arm.set_state(ArmState::Initial).await,
             }
         }
