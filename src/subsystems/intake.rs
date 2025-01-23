@@ -41,7 +41,7 @@ pub enum IntakeState {
     Stop,
 }
 
-const RING_THRESHOLD: f64 = 0.3;
+const RING_THRESHOLD: core::ops::Range<f64> = 0.4..1.0;
 const TIMEOUT: u128 = 3000;
 const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(500);
 const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(1000);
@@ -86,7 +86,7 @@ impl IntakeInner {
                         .partial_line_tracker
                         .reflectivity()
                         .context(LineTrackerPortSnafu)?;
-                    if current_value > RING_THRESHOLD {
+                    if RING_THRESHOLD.contains(&current_value) {
                         debug!("ring accepted, reflectivity: {}", current_value);
                         // If there is a ring, test its color
                         if accept_color.reflectivity().contains(&current_value) {
@@ -123,27 +123,27 @@ impl IntakeInner {
                             .reflectivity()
                             .context(LineTrackerPortSnafu)?
                     };
-                    if current_value > RING_THRESHOLD {
+                    if RING_THRESHOLD.contains(&current_value) {
                         self.state = IntakeState::Stop;
                     }
                 }
             }
             IntakeState::Stop => {
-                if self
-                    .partial_line_tracker
-                    .reflectivity()
-                    .context(LineTrackerPortSnafu)?
-                    > RING_THRESHOLD
-                {
+                if RING_THRESHOLD.contains(
+                    &self
+                        .partial_line_tracker
+                        .reflectivity()
+                        .context(LineTrackerPortSnafu)?,
+                ) {
                     self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
-                } else if self
-                    .lady_brown_line_tracker
-                    .reflectivity()
-                    .context(LineTrackerPortSnafu)?
-                    > RING_THRESHOLD
-                    && (self.lady_brown_line_tracker_start.is_none()
-                        || self.lady_brown_line_tracker_start.unwrap().elapsed()
-                            < LADY_BROWN_HOLD_DURATION)
+                } else if RING_THRESHOLD.contains(
+                    &self
+                        .lady_brown_line_tracker
+                        .reflectivity()
+                        .context(LineTrackerPortSnafu)?,
+                ) && (self.lady_brown_line_tracker_start.is_none()
+                    || self.lady_brown_line_tracker_start.unwrap().elapsed()
+                        < LADY_BROWN_HOLD_DURATION)
                 {
                     if self.lady_brown_line_tracker_start.is_none() {
                         self.lady_brown_line_tracker_start = Some(Instant::now());
