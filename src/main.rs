@@ -93,6 +93,10 @@ impl CompeteWithSelector for Robot {
             ),
         ]
     }
+
+    fn controller(&self) -> Option<&vexide::devices::controller::Controller> {
+        Some(&self.controller)
+    }
 }
 
 #[vexide::main(banner(theme = THEME_OFFICIAL_LOGO))]
@@ -173,7 +177,5 @@ async fn main(peripherals: Peripherals) {
     robot.intake.task();
 
     info!("entering competing");
-    robot
-        .compete_with_selector(peripherals.display, Some(&autonomous::skills::Skills))
-        .await;
+    robot.compete_with_selector(peripherals.display, None).await;
 }
