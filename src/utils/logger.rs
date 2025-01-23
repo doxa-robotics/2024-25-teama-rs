@@ -37,7 +37,15 @@ impl log::Log for SimpleLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            println!("{} - {}", record.level(), record.args());
+            // Only write to stdout if we're not connected to the competition field control
+            // If we're connected to the field control, writing to stdout doesn't go
+            // anywhere and is a waste of time.
+            if !matches!(
+                vexide::core::competition::system(),
+                Some(vexide::core::competition::CompetitionSystem::FieldControl)
+            ) {
+                println!("{} - {}", record.level(), record.args());
+            }
             if let Some(mut guard) = self.file.try_lock() {
                 if let Some(file) = guard.as_mut() {
                     _ = writeln!(file, "{} - {}", record.level(), record.args());
