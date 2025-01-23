@@ -47,40 +47,45 @@ impl AutonRoutine<Robot> for Skills {
         robot.drivetrain.drive_for(720.0).await?;
         // Turn to  degrees
         robot.drivetrain.turn_to(125.0).await?;
+        //drive forawrd
+        robot.drivetrain.drive_for(970.0).await?;
+        //stop
         robot.intake.stop().await;
 
         //------------------------------ Wall Stake---------------------//
-        //drive forawrd
-        robot.drivetrain.drive_for(970.0).await?;
         // Turn to  degrees
         robot.drivetrain.turn_to(90.0).await?;
-        // Unclamp 
-        robot.clamp.unclamp()?;
         //drive forawrd
         robot.drivetrain.drive_for(100.0).await?;
         /////////////////////////////
         //drive forawrd
         robot.drivetrain.drive_for(-100.0).await?;
-        //clamp
-        robot.clamp.clamp()
         sleep(Duration::from_millis(500)).await;
 
         //------------------------------ corner---------------------//
 
-
-
-        
-        // Turn to 110 degrees
-        robot.drivetrain.turn_to(95.0).await?; // <-- needs to be changed from here
-        robot.drivetrain.drive_for(-600.0).await?;
-        // Clamp the goal and wait 500ms for the clamp to close
-        robot.clamp.clamp()?;
-        sleep(Duration::from_millis(500)).await;
-        // Turn to -35 degrees
-        robot.drivetrain.turn_to(-35.0).await?;
-        // Drive foward 150 cm while intaking
+        // Turn to 210 degrees
+        robot.drivetrain.turn_to(210.0).await?; 
         robot.intake.run(Direction::Forward).await;
-        robot.drivetrain.drive_for(1500.0).await?;
+        robot.drivetrain.drive_for(700.0).await?;
+        // Turn to 180 degrees
+        robot.drivetrain.turn_to(180.0).await?; 
+        robot.drivetrain.drive_for(720.0).await?;
+        //turn
+        robot.drivetrain.turn_to(270.0).await?; 
+        //push in to corner
+        robot.drivetrain.drive_for(-250.0).await?;
+        robot.clamp.clamp()?;
+
+        //---------------------------grab stake 2 and go-----------------//
+        // Turn to 210 degrees
+        robot.drivetrain.turn_to(315.0).await?; 
+        // move
+        robot.drivetrain.drive_for(100.0).await?;
+        robot.drivetrain.turn_to(135.0).await?;
+        robot.drivetrain.drive_for(800.0).await?;
+
+    
         // Wait a bit to finish intaking
         sleep(Duration::from_millis(500)).await;
         // Turn the intake off
