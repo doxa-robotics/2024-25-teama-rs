@@ -176,7 +176,7 @@ async fn main(peripherals: Peripherals) {
     robot
         .compete_with_selector(
             peripherals.display,
-            Some(&autonomous::stake_side::RedStakeSide),
+            Some(&autonomous::cluster_side::RedClusterSide),
         )
         .await;
 }
