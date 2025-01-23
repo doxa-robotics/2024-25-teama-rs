@@ -12,20 +12,20 @@ use vexide::{
 use crate::utils::motor_group::MotorGroup;
 
 #[derive(Debug, Clone, Copy)]
-pub enum ArmState {
+pub enum LadyBrownState {
     Initial,
     Intake,
     MaxExpansion,
     Manual(f64),
 }
 
-impl Default for ArmState {
+impl Default for LadyBrownState {
     fn default() -> Self {
         Self::Initial
     }
 }
 
-impl ArmState {
+impl LadyBrownState {
     pub const INITIAL_ARM_ANGLE: f64 = 10.0;
     pub const INTAKE_ANGLE: f64 = Self::INITIAL_ARM_ANGLE + 40.0;
     pub const MAX_EXPANSION_ANGLE: f64 = Self::INITIAL_ARM_ANGLE + 160.0;
@@ -46,15 +46,15 @@ impl ArmState {
 }
 
 #[derive(Debug)]
-struct ArmInner {
+struct LadyBrownInner {
     motors: MotorGroup,
     rotation: RotationSensor,
     pid: pid::Pid<f64>,
-    state: ArmState,
+    state: LadyBrownState,
 }
 
-impl ArmInner {
-    async fn update(&mut self) -> Result<(), ArmError> {
+impl LadyBrownInner {
+    async fn update(&mut self) -> Result<(), LadyBrownError> {
         self.pid.setpoint = self.state.angle();
         let current_angle = self
             .rotation
@@ -68,41 +68,44 @@ impl ArmInner {
 }
 
 #[derive(Debug, Clone)]
-pub struct Arm(Arc<Mutex<ArmInner>>);
+pub struct LadyBrown(Arc<Mutex<LadyBrownInner>>);
 
 #[derive(Debug, Snafu)]
-pub enum ArmError {
+pub enum LadyBrownError {
     #[snafu(display("motor error: {}", source))]
     Motor { source: MotorError },
     #[snafu(display("rotation sensor error: {}", source))]
     RotationSensor { source: vexide::devices::PortError },
 }
 
-impl Arm {
-    pub fn new(motors: MotorGroup, mut rotation_sensor: RotationSensor) -> Result<Self, ArmError> {
+impl LadyBrown {
+    pub fn new(
+        motors: MotorGroup,
+        mut rotation_sensor: RotationSensor,
+    ) -> Result<Self, LadyBrownError> {
         rotation_sensor
             .set_direction(Direction::Reverse)
             .context(RotationSensorSnafu)?;
         rotation_sensor
-            .set_position(Position::from_degrees(ArmState::INITIAL_ARM_ANGLE))
+            .set_position(Position::from_degrees(LadyBrownState::INITIAL_ARM_ANGLE))
             .context(RotationSensorSnafu)?;
 
-        let mut pid = pid::Pid::new(ArmState::Initial.angle(), Motor::EXP_MAX_VOLTAGE);
+        let mut pid = pid::Pid::new(LadyBrownState::Initial.angle(), Motor::EXP_MAX_VOLTAGE);
         pid.p(0.2, f64::MAX);
 
-        Ok(Self(Arc::new(Mutex::new(ArmInner {
+        Ok(Self(Arc::new(Mutex::new(LadyBrownInner {
             motors,
             pid,
             rotation: rotation_sensor,
-            state: ArmState::default(),
+            state: LadyBrownState::default(),
         }))))
     }
 
-    pub async fn reset_rotation(&self) -> Result<(), ArmError> {
+    pub async fn reset_rotation(&self) -> Result<(), LadyBrownError> {
         let mut inner = self.0.lock().await;
         inner
             .rotation
-            .set_position(Position::from_degrees(ArmState::INITIAL_ARM_ANGLE))
+            .set_position(Position::from_degrees(LadyBrownState::INITIAL_ARM_ANGLE))
             .context(RotationSensorSnafu)?;
         Ok(())
     }
@@ -128,11 +131,11 @@ impl Arm {
         inner.state.add(angle_change);
     }
 
-    pub async fn state(&self) -> ArmState {
+    pub async fn state(&self) -> LadyBrownState {
         self.0.lock().await.state
     }
 
-    pub async fn set_state(&self, state: ArmState) {
+    pub async fn set_state(&self, state: LadyBrownState) {
         self.0.lock().await.state = state;
     }
 

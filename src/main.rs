@@ -16,11 +16,11 @@ use core::time::Duration;
 use doxa_selector::{CompeteWithSelector, CompeteWithSelectorExt};
 use log::{error, info};
 use subsystems::{
-    arm::Arm,
     clamp::Clamp,
     doinker::Doinker,
     drivetrain::{Drivetrain, DrivetrainConfig},
     intake::Intake,
+    lady_brown::LadyBrown,
 };
 use utils::{logger, motor_group::MotorGroup};
 use vexide::{core::sync::Mutex, prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
@@ -33,7 +33,7 @@ struct Robot {
     intake: Intake,
     clamp: Clamp,
     doinker: Doinker,
-    arm: Arm,
+    lady_brown: LadyBrown,
 }
 
 impl CompeteWithSelector for Robot {
@@ -85,7 +85,7 @@ impl CompeteWithSelector for Robot {
             ),
             (
                 "Arm temp (C)".to_string(),
-                self.arm.temperature().to_string(),
+                self.lady_brown.temperature().to_string(),
             ),
             (
                 "Intake temp (C)".to_string(),
@@ -157,7 +157,7 @@ async fn main(peripherals: Peripherals) {
             peripherals.adi_f,
             vexide::devices::adi::digital::LogicLevel::Low,
         )),
-        arm: Arm::new(
+        lady_brown: LadyBrown::new(
             MotorGroup::new(vec![
                 Motor::new_exp(peripherals.port_2, Direction::Forward),
                 Motor::new_exp(peripherals.port_3, Direction::Reverse),
@@ -169,11 +169,11 @@ async fn main(peripherals: Peripherals) {
 
     info!("-- Status --");
     info!("Drivetrain temp: {:?}", robot.drivetrain.temperature());
-    info!("Arm temp: {:?}", robot.arm.temperature());
+    info!("Arm temp: {:?}", robot.lady_brown.temperature());
     info!("Intake temp: {:?}", robot.intake.temperature());
 
     info!("starting subsystem background tasks");
-    robot.arm.task();
+    robot.lady_brown.task();
     robot.intake.task();
 
     info!("entering competing");

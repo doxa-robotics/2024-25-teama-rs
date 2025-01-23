@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use doxa_selector::AutonRoutine;
 use vexide::prelude::*;
 
-use crate::{subsystems::arm::ArmState, Robot};
+use crate::{subsystems::lady_brown::LadyBrownState, Robot};
 
 pub struct Skills;
 
@@ -116,15 +116,18 @@ impl AutonRoutine<Robot> for Skills {
         robot.drivetrain.turn_to(-90.0).await?;
         // Turn on the intake and drive forward 70cm
         robot.intake.run(Direction::Forward).await;
-        robot.arm.set_state(ArmState::Intake).await;
+        robot.lady_brown.set_state(LadyBrownState::Intake).await;
         robot.drivetrain.drive_for(600.0).await?;
         // Use lady brown - we need to keep the intake on
-        robot.arm.set_state(ArmState::MaxExpansion).await;
+        robot
+            .lady_brown
+            .set_state(LadyBrownState::MaxExpansion)
+            .await;
         sleep(Duration::from_millis(300)).await;
         robot.intake.stop().await;
         // Should have gone on
         sleep(Duration::from_millis(500)).await;
-        robot.arm.set_state(ArmState::Initial).await;
+        robot.lady_brown.set_state(LadyBrownState::Initial).await;
         return Ok(());
         // Turn to 25 degrees
         robot.drivetrain.turn_to(25.0).await?;

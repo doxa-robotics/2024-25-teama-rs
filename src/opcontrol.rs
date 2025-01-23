@@ -5,7 +5,8 @@ use vexide::prelude::*;
 
 use crate::{
     subsystems::{
-        arm::ArmState, clamp::ClampError, doinker::DoinkerError, drivetrain::DrivetrainError,
+        clamp::ClampError, doinker::DoinkerError, drivetrain::DrivetrainError,
+        lady_brown::LadyBrownState,
     },
     Robot,
 };
@@ -63,10 +64,10 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         }
 
         if state.button_l2.is_now_pressed() {
-            match robot.arm.state().await {
-                ArmState::Initial => robot.arm.set_state(ArmState::Intake).await,
-                ArmState::Intake => {
-                    let arm = robot.arm.clone();
+            match robot.lady_brown.state().await {
+                LadyBrownState::Initial => robot.lady_brown.set_state(LadyBrownState::Intake).await,
+                LadyBrownState::Intake => {
+                    let arm = robot.lady_brown.clone();
                     let intake = robot.intake.clone();
                     let should_sleep = robot.intake.is_ring_released_in_lady_brown().await;
                     spawn(async move {
@@ -74,21 +75,21 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
                         if should_sleep {
                             sleep(Duration::from_millis(200)).await;
                         }
-                        arm.set_state(ArmState::MaxExpansion).await;
+                        arm.set_state(LadyBrownState::MaxExpansion).await;
                         sleep(Duration::from_millis(300)).await;
                         intake.stop().await;
                     })
                     .detach();
                 }
-                ArmState::MaxExpansion => robot.arm.set_state(ArmState::Initial).await,
-                ArmState::Manual(_) => robot.arm.set_state(ArmState::Initial).await,
+                LadyBrownState::MaxExpansion => robot.lady_brown.set_state(LadyBrownState::Initial).await,
+                LadyBrownState::Manual(_) => robot.lady_brown.set_state(LadyBrownState::Initial).await,
             }
         }
         if state.button_up.is_pressed() {
-            robot.arm.manual_add(2.0).await;
+            robot.lady_brown.manual_add(2.0).await;
         }
         if state.button_down.is_pressed() {
-            robot.arm.manual_add(-2.0).await;
+            robot.lady_brown.manual_add(-2.0).await;
         }
 
         if state.button_a.is_now_pressed() {
