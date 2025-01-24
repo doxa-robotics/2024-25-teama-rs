@@ -34,13 +34,13 @@ impl AutonRoutine<Robot> for NegativeTouch {
     }
 
     fn name(&self) -> &'static str {
-        "Stake side"
+        "Negative touch"
     }
 
     fn description(&self) -> &'static str {
-        "Clamp forward; barely miss rings"
+        "Setup in front of mogoal"
     }
 }
 
-super::red_auton!(RedPositive, NegativeTouch, "Positive (+)");
-super::blue_auton!(BluePositive, NegativeTouch, "Positive (+)");
+super::red_auton!(RedNegativeTouch, NegativeTouch, "Negative touch (-)");
+super::blue_auton!(BlueNegativeTouch, NegativeTouch, "Negative touch (-)");
