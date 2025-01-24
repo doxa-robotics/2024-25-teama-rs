@@ -12,6 +12,7 @@ pub mod negative;
 pub mod noop;
 pub mod skills;
 // pub mod skills_revised;
+pub mod negative_touch;
 pub mod positive;
 pub mod test;
 
@@ -41,11 +42,19 @@ pub fn autonomous_routes<'a>(
     let mut map: BTreeMap<Category, &[&dyn AutonRoutine<Robot, Return = Return>]> = BTreeMap::new();
     map.insert(
         Category::Red,
-        &[&positive::RedPositive, &negative::RedNegative],
+        &[
+            &positive::RedPositive,
+            &negative::RedNegative,
+            &negative_touch::RedNegativeTouch,
+        ],
     );
     map.insert(
         Category::Blue,
-        &[&positive::BluePositive, &negative::BlueNegative],
+        &[
+            &positive::BluePositive,
+            &negative::BlueNegative,
+            &negative_touch::BlueNegativeTouch,
+        ],
     );
     map.insert(Category::Skills, &[&skills::Skills]);
     map.insert(Category::Test, &[&test::Test, &noop::Noop]);
