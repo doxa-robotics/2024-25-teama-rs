@@ -54,6 +54,7 @@ impl AutonRoutine<Robot> for Skills {
         // Drive forward 130cm
         robot.drivetrain.drive_for(400.0).await?;
         robot.drivetrain.drive_for(700.0).await?;
+        sleep(Duration::from_millis(500)).await;
         robot.drivetrain.drive_for(400.0).await?;
         // Turn to 45 degrees
         robot.drivetrain.turn_to(45.0).await?;
@@ -71,7 +72,8 @@ impl AutonRoutine<Robot> for Skills {
         // Turn to 110 degrees
         robot.drivetrain.turn_to(90.0).await?;
         // Drive backward 60cm
-        robot.drivetrain.drive_for(-600.0).await?;
+        robot.drivetrain.drive_for(-560.0).await?;
+        robot.drivetrain.drive_for(-40.0).await?;
         // Clamp the goal and wait 500ms for the clamp to close
         robot.clamp.clamp()?;
         sleep(Duration::from_millis(500)).await;
@@ -107,9 +109,27 @@ impl AutonRoutine<Robot> for Skills {
         robot.clamp.unclamp()?;
         sleep(Duration::from_millis(500)).await;
         // Drive out a bit and turn to 20 degrees
-        robot.drivetrain.drive_for(100.0).await?;
+        /*robot.drivetrain.drive_for(1600.0).await?;
+        robot.lady_brown.set_state(LadyBrownState::Intake).await;
+        robot.drivetrain.turn_to(-90.0).await?;
+        robot.intake.run(Direction::Forward).await;
+        robot.drivetrain.drive_for(800.0).await?;
+        robot
+            .lady_brown
+            .set_state(LadyBrownState::MaxExpansion)
+            .await;
+        sleep(Duration::from_millis(1000)).await;
+        robot.intake.stop().await;
+        robot.drivetrain.drive_for(-400.0).await?;
+        robot.lady_brown.set_state(LadyBrownState::Initial).await;
+        */
+        robot.drivetrain.drive_for(300.0).await?;
+        robot.drivetrain.turn_to(180.0).await?;
+        robot.drivetrain.drive_for(-600.0 * 5.5).await?;
+        robot.drivetrain.turn_to(-90.0).await?;
+        robot.drivetrain.drive_for(-600.0 * 5.5).await?;
+        robot.drivetrain.drive_for(300.0).await?;
         return Ok(());
-        robot.drivetrain.turn_to(20.0).await?;
         // Drive forward 190cm
         robot.drivetrain.drive_for(1900.0).await?;
         // Turn to -90 degrees
