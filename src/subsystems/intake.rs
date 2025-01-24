@@ -41,7 +41,6 @@ pub enum IntakeState {
     Stop,
 }
 
-const RING_THRESHOLD: core::ops::Range<f64> = 0.4..1.0;
 const TIMEOUT: u128 = 3000;
 const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(500);
 const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(1000);
@@ -54,6 +53,7 @@ pub struct IntakeInner {
     lady_brown_line_tracker: AdiLineTracker,
     state: IntakeState,
     lady_brown_line_tracker_start: Option<Instant>,
+    ring_theshold: core::ops::Range<f64>,
 }
 
 #[derive(Debug, Snafu)]
@@ -86,7 +86,7 @@ impl IntakeInner {
                         .partial_line_tracker
                         .reflectivity()
                         .context(LineTrackerPortSnafu)?;
-                    if RING_THRESHOLD.contains(&current_value) {
+                    if self.ring_theshold.contains(&current_value) {
                         debug!("ring accepted, reflectivity: {}", current_value);
                         // If there is a ring, test its color
                         if accept_color.reflectivity().contains(&current_value) {
@@ -123,20 +123,21 @@ impl IntakeInner {
                             .reflectivity()
                             .context(LineTrackerPortSnafu)?
                     };
-                    if RING_THRESHOLD.contains(&current_value) {
+                    debug!("{:.2?}", current_value);
+                    if self.ring_theshold.contains(&current_value) {
                         self.state = IntakeState::Stop;
                     }
                 }
             }
             IntakeState::Stop => {
-                if RING_THRESHOLD.contains(
+                if self.ring_theshold.contains(
                     &self
                         .partial_line_tracker
                         .reflectivity()
                         .context(LineTrackerPortSnafu)?,
                 ) {
                     self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
-                } else if RING_THRESHOLD.contains(
+                } else if self.ring_theshold.contains(
                     &self
                         .lady_brown_line_tracker
                         .reflectivity()
@@ -169,11 +170,18 @@ impl Intake {
     ) -> Self {
         Self(Arc::new(Mutex::new(IntakeInner {
             motor,
+            ring_theshold: (partial_line_tracker.reflectivity().unwrap_or(0.35) + 0.05)..1.0,
             partial_line_tracker,
             lady_brown_line_tracker,
             state: IntakeState::Stop,
             lady_brown_line_tracker_start: None,
         })))
+    }
+
+    pub async fn calibrate_reflectivity(&self) {
+        let mut inner = self.0.lock().await;
+        inner.ring_theshold =
+            (inner.partial_line_tracker.reflectivity().unwrap_or(0.35) + 0.05)..1.0;
     }
 
     pub async fn is_ring_released_in_lady_brown(&self) -> bool {

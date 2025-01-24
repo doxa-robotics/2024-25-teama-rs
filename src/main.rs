@@ -55,6 +55,8 @@ impl CompeteWithSelector for Robot {
     async fn driver(&mut self) {
         info!("Driver starting");
 
+        self.intake.calibrate_reflectivity().await;
+
         loop {
             let Err(err) = opcontrol::opcontrol(self).await;
             error!("opcontrol crashed, restarting! {}", err);
@@ -96,6 +98,17 @@ impl CompeteWithSelector for Robot {
 
     fn controller(&self) -> Option<&vexide::devices::controller::Controller> {
         Some(&self.controller)
+    }
+
+    fn autonomous_route_started(
+        &mut self,
+        _route: &dyn doxa_selector::AutonRoutine<Self, Return = Self::Return>,
+    ) {
+        let intake = self.intake.clone();
+        spawn(async move {
+            intake.calibrate_reflectivity().await;
+        })
+        .detach();
     }
 }
 
