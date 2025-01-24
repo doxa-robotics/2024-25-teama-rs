@@ -179,13 +179,15 @@ impl Drivetrain {
         let mut right_velocity = self.right.lock().await.velocity().context(MotorSnafu)?;
 
         let mut left_controller: pid::Pid<f64> =
-            pid::Pid::new(left_distance + target_distance, Motor::V5_MAX_VOLTAGE);
+            pid::Pid::new(left_distance + target_distance, Motor::V5_MAX_VOLTAGE * 0.7);
         left_controller
             .p(self.config.drive_p * p_multiplier, f64::MAX)
             .i(self.config.drive_i, f64::MAX)
             .d(self.config.drive_d, f64::MAX);
-        let mut right_controller: pid::Pid<f64> =
-            pid::Pid::new(right_distance + target_distance, Motor::V5_MAX_VOLTAGE);
+        let mut right_controller: pid::Pid<f64> = pid::Pid::new(
+            right_distance + target_distance,
+            Motor::V5_MAX_VOLTAGE * 0.7,
+        );
         right_controller
             .p(self.config.drive_p * p_multiplier, f64::MAX)
             .i(self.config.drive_i, f64::MAX)
