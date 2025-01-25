@@ -150,12 +150,13 @@ impl Drivetrain {
     ///
     /// - `target_distance`: The distance to drive in mm
     pub async fn drive_for(&mut self, target_distance: f64) -> Result<(), DrivetrainError> {
-        self.drive_for_advanced(target_distance, 1.0).await
+        self.drive_for_advanced(target_distance, 1.0, 1.0).await
     }
     pub async fn drive_for_advanced(
         &mut self,
         target_distance: f64,
         p_multiplier: f64,
+        max_voltage_multiplier: f64,
     ) -> Result<(), DrivetrainError> {
         let drive_start = Instant::now();
 
@@ -178,14 +179,18 @@ impl Drivetrain {
         let mut left_velocity = self.left.lock().await.velocity().context(MotorSnafu)?;
         let mut right_velocity = self.right.lock().await.velocity().context(MotorSnafu)?;
 
-        let mut left_controller: pid::Pid<f64> =
-            pid::Pid::new(left_distance + target_distance, Motor::V5_MAX_VOLTAGE);
+        let mut left_controller: pid::Pid<f64> = pid::Pid::new(
+            left_distance + target_distance,
+            Motor::V5_MAX_VOLTAGE * max_voltage_multiplier,
+        );
         left_controller
             .p(self.config.drive_p * p_multiplier, f64::MAX)
             .i(self.config.drive_i, f64::MAX)
             .d(self.config.drive_d, f64::MAX);
-        let mut right_controller: pid::Pid<f64> =
-            pid::Pid::new(right_distance + target_distance, Motor::V5_MAX_VOLTAGE);
+        let mut right_controller: pid::Pid<f64> = pid::Pid::new(
+            right_distance + target_distance,
+            Motor::V5_MAX_VOLTAGE * max_voltage_multiplier,
+        );
         right_controller
             .p(self.config.drive_p * p_multiplier, f64::MAX)
             .i(self.config.drive_i, f64::MAX)

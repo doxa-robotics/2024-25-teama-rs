@@ -56,7 +56,7 @@ impl AutonRoutine<Robot> for Skills {
         // Turn to 45 degrees
         robot.drivetrain.turn_to(45.0).await?;
         // Drive forward 30cm
-        robot.drivetrain.drive_for_advanced(300.0, 0.8).await?;
+        robot.drivetrain.drive_for_advanced(300.0, 0.8, 1.0).await?;
         // Turn to -35 degrees and back up 10cm
         robot.drivetrain.turn_to(-28.0).await?;
         robot.drivetrain.drive_for(-200.0).await?;
@@ -125,13 +125,13 @@ impl AutonRoutine<Robot> for Skills {
         robot.drivetrain.turn_to(-90.0).await?;
         robot
             .drivetrain
-            .drive_for_advanced(-600.0 * 5.0, 0.7)
+            .drive_for_advanced(-600.0 * 5.0, 0.7, 1.0)
             .await?;
         robot.drivetrain.drive_for(300.0).await?;
         robot.drivetrain.turn_to(90.0).await?;
         robot
             .drivetrain
-            .drive_for_advanced(-600.0 * 5.5, 0.7)
+            .drive_for_advanced(-600.0 * 5.5, 0.7, 1.0)
             .await?;
         robot.drivetrain.drive_for(300.0).await?;
         return Ok(());

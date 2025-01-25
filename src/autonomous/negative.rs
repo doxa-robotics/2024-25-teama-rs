@@ -18,7 +18,10 @@ impl AutonRoutine<Robot> for Negative {
         robot.drivetrain.reset_inertial(270.0).await?;
         robot.clamp.clamp()?;
         // Reverse 30cm
-        robot.drivetrain.drive_for_advanced(-380.0, 0.7).await?;
+        robot
+            .drivetrain
+            .drive_for_advanced(-380.0, 1.0, 0.7)
+            .await?;
         // Turn to 0 degrees
         robot.drivetrain.turn_to(0.0).await?;
         // Reverse 10cm
