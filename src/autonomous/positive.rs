@@ -20,11 +20,11 @@ impl AutonRoutine<Robot> for Positive {
         //unclamp
         robot.clamp.unclamp()?;
         // Move  64cm
-        robot.drivetrain.drive_for(-780.0).await?;
+        robot.drivetrain.drive_for(-840.0).await?;
         //turn
         robot.drivetrain.turn_to(150.0).await?;
         // Move  20cm
-        robot.drivetrain.drive_for(-340.0).await?;
+        robot.drivetrain.drive_for(-300.0).await?;
         robot.drivetrain.drive_for(-85.0).await?;
         //clamp
         robot.clamp.clamp()?;
@@ -36,7 +36,13 @@ impl AutonRoutine<Robot> for Positive {
         robot.drivetrain.turn_to(220.0).await?;
         //unclamp
         robot.clamp.unclamp()?;
-        robot.intake.partial_intake().await;
+        robot.intake.run(Direction::Forward).await;
+        let intake = robot.intake.clone();
+        spawn(async move {
+            sleep(Duration::from_millis(1000)).await;
+            intake.stop().await;
+        })
+        .detach();
         // Move  5cm
         robot.drivetrain.drive_for(280.0).await?;
         sleep(Duration::from_millis(500)).await;
@@ -46,8 +52,8 @@ impl AutonRoutine<Robot> for Positive {
         //--------------------- grab stake 2 and score 2----------------//
 
         //move
-        robot.drivetrain.drive_for(-300.0).await?;
-        robot.drivetrain.drive_for(-70.0).await?;
+        robot.drivetrain.drive_for(-270.0).await?;
+        robot.drivetrain.drive_for(-100.0).await?;
         robot.clamp.clamp()?;
         sleep(Duration::from_millis(500)).await;
         robot.drivetrain.turn_to(-65.0).await?;
