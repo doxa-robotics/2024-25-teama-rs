@@ -20,7 +20,7 @@ snafu = { version = "0.8.5", default-features = false, features = [
 ] }
 async-trait = "0.1.83"
 doxa-selector = { git = "https://github.com/doxa-robotics/doxa-selector-rs.git", branch = "main", default-features = false }
-vexide = { git = "https://github.com/vexide/vexide.git", branch = "test/patch-uploading" }
+vexide = { git = "https://github.com/vexide/vexide.git", branch = "main" }
 
 [profile.release]
 strip = true

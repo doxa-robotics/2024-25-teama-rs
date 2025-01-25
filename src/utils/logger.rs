@@ -62,9 +62,9 @@ impl log::Log for SimpleLogger {
     }
 
     fn flush(&self) {
-        vexide::core::io::stdout().flush().ok();
         let file = self.file.clone();
         spawn(async move {
+            vexide::core::io::stdout().lock().await.flush().ok();
             if let Some(file) = file.lock().await.as_mut() {
                 file.flush().ok();
             }
