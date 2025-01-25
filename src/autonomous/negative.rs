@@ -25,18 +25,19 @@ impl AutonRoutine<Robot> for Negative {
         // Reverse 10cm
         robot.drivetrain.drive_for(-160.0).await?;
         robot.intake.run(Direction::Forward).await;
-        sleep(Duration::from_millis(1200)).await;
+        sleep(Duration::from_millis(800)).await;
         robot.intake.stop().await;
         robot.drivetrain.drive_for(400.0).await?;
-        robot.drivetrain.turn_to(180.0 - 48.0).await?;
         robot.clamp.unclamp()?;
-        robot.drivetrain.drive_for(-580.0).await?;
+        robot.drivetrain.turn_to(180.0 - 48.0).await?;
+        robot.drivetrain.drive_for(-500.0).await?;
+        robot.drivetrain.drive_for(-80.0).await?;
         robot.clamp.clamp()?;
         sleep(Duration::from_millis(500)).await;
         robot.drivetrain.turn_to(-48.0).await?;
         robot.intake.run(Direction::Forward).await;
         robot.drivetrain.drive_for(680.0).await?;
-        sleep(Duration::from_millis(1500)).await;
+        sleep(Duration::from_millis(500)).await;
         robot.drivetrain.drive_for(-450.0).await?;
         robot.drivetrain.turn_to(-90.0).await?;
         robot.drivetrain.drive_for(400.0).await?;
