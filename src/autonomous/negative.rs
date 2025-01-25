@@ -29,8 +29,8 @@ impl AutonRoutine<Robot> for Negative {
         robot.drivetrain.drive_for(400.0).await?;
         robot.clamp.unclamp()?;
         robot.drivetrain.turn_to(180.0 - 48.0).await?;
-        robot.drivetrain.drive_for(-500.0).await?;
-        robot.drivetrain.drive_for(-80.0).await?;
+        robot.drivetrain.drive_for(-460.0).await?;
+        robot.drivetrain.drive_for(-120.0).await?;
         robot.clamp.clamp()?;
         sleep(Duration::from_millis(500)).await;
         robot.drivetrain.turn_to(-48.0).await?;
