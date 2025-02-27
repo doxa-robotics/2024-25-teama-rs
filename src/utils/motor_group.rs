@@ -98,9 +98,12 @@ impl MotorGroup {
         let mut total = Position::from_degrees(0.0);
         for motor in &self.0 {
             total += motor.position()?;
-        };
+        }
         // tpr is what position uses internally, so we can use it here to avoid convertion internally
-        Ok(Position::from_ticks(total.as_ticks(4_608_000) / self.0.len() as i64, 4_608_000))
+        Ok(Position::from_ticks(
+            total.as_ticks(4_608_000) / self.0.len() as i64,
+            4_608_000,
+        ))
     }
 
     pub fn reset_position(&mut self) -> Result<(), MotorError> {
@@ -148,5 +151,12 @@ impl MotorGroup {
             total += motor.power()?;
         }
         Ok(total / self.0.len() as f64)
+    }
+
+    pub fn set_position(&mut self, position: Position) -> Result<(), MotorError> {
+        for motor in &mut self.0 {
+            motor.set_position(position)?;
+        }
+        Ok(())
     }
 }
