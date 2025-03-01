@@ -59,27 +59,15 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         if state.button_r1.is_now_released() || state.button_l1.is_now_released() {
             robot.intake.stop().await;
         }
-        if state.button_y.is_now_pressed() {
-            robot.intake.partial_intake().await;
-        }
 
         if state.button_l2.is_now_pressed() {
             match robot.lady_brown.state().await {
                 LadyBrownState::Initial => robot.lady_brown.set_state(LadyBrownState::Intake).await,
                 LadyBrownState::Intake => {
-                    let arm = robot.lady_brown.clone();
-                    let intake = robot.intake.clone();
-                    // let should_sleep = robot.intake.is_ring_released_in_lady_brown().await;
-                    spawn(async move {
-                        intake.run(Direction::Forward).await;
-                        // if should_sleep {
-                        sleep(Duration::from_millis(200)).await;
-                        // }
-                        arm.set_state(LadyBrownState::MaxExpansion).await;
-                        sleep(Duration::from_millis(300)).await;
-                        intake.stop().await;
-                    })
-                    .detach();
+                    robot
+                        .lady_brown
+                        .set_state(LadyBrownState::MaxExpansion)
+                        .await
                 }
                 LadyBrownState::MaxExpansion => {
                     robot.lady_brown.set_state(LadyBrownState::Initial).await
@@ -98,10 +86,6 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
 
         if state.button_a.is_now_pressed() {
             robot.clamp.toggle().context(ClampSnafu)?;
-        }
-
-        if state.button_b.is_now_pressed() {
-            robot.doinker.toggle().context(DoinkerSnafu)?;
         }
 
         sleep(Duration::from_millis(10)).await;

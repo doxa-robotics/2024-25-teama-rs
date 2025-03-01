@@ -32,7 +32,6 @@ struct Robot {
 
     intake: Intake,
     clamp: Clamp,
-    doinker: Doinker,
     lady_brown: LadyBrown,
 }
 
@@ -55,11 +54,10 @@ impl CompeteWithSelector for Robot {
     async fn driver(&mut self) {
         info!("Driver starting");
 
-        self.intake.calibrate_reflectivity().await;
-
         loop {
             let Err(err) = opcontrol::opcontrol(self).await;
-            error!("opcontrol crashed, restarting! {}", err);
+            error!("opcontrol crashed, restarting in 500ms! {}", err);
+            sleep(Duration::from_millis(500)).await;
         }
     }
 
@@ -104,11 +102,6 @@ impl CompeteWithSelector for Robot {
         &mut self,
         _route: &dyn doxa_selector::AutonRoutine<Self, Return = Self::Return>,
     ) {
-        let intake = self.intake.clone();
-        spawn(async move {
-            intake.calibrate_reflectivity().await;
-        })
-        .detach();
     }
 }
 
@@ -118,21 +111,21 @@ async fn main(peripherals: Peripherals) {
 
     let left_motors = Arc::new(Mutex::new(MotorGroup::from_ports(
         vec![
-            (peripherals.port_12, true),
-            (peripherals.port_14, true),
-            (peripherals.port_16, true),
+            (peripherals.port_7, true),
+            (peripherals.port_6, true),
+            (peripherals.port_5, true),
         ],
         Gearset::Blue,
     )));
     let right_motors = Arc::new(Mutex::new(MotorGroup::from_ports(
         vec![
-            (peripherals.port_7, false),
+            (peripherals.port_10, false),
+            (peripherals.port_9, false),
             (peripherals.port_8, false),
-            (peripherals.port_17, false),
         ],
         Gearset::Blue,
     )));
-    let inertial = Arc::new(Mutex::new(InertialSensor::new(peripherals.port_4)));
+    let inertial = Arc::new(Mutex::new(InertialSensor::new(peripherals.port_20)));
 
     let robot = Robot {
         controller: peripherals.primary_controller,
@@ -157,25 +150,18 @@ async fn main(peripherals: Peripherals) {
             },
         ),
 
-        intake: Intake::new(
-            Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-            AdiLineTracker::new(peripherals.adi_b),
-            AdiLineTracker::new(peripherals.adi_c),
-        ),
-        clamp: Clamp::new(AdiDigitalOut::with_initial_level(
-            peripherals.adi_a,
-            vexide::devices::adi::digital::LogicLevel::High,
+        intake: Intake::new(Motor::new(
+            peripherals.port_4,
+            Gearset::Blue,
+            Direction::Reverse,
         )),
-        doinker: Doinker::new(AdiDigitalOut::with_initial_level(
-            peripherals.adi_f,
-            vexide::devices::adi::digital::LogicLevel::Low,
-        )),
+        clamp: Clamp::new(AdiDigitalOut::new(peripherals.adi_a)),
         lady_brown: LadyBrown::new(
             MotorGroup::new(vec![
-                Motor::new_exp(peripherals.port_2, Direction::Forward),
-                Motor::new_exp(peripherals.port_3, Direction::Reverse),
+                Motor::new_exp(peripherals.port_1, Direction::Forward),
+                Motor::new_exp(peripherals.port_2, Direction::Reverse),
             ]),
-            RotationSensor::new(peripherals.port_9, Direction::Forward),
+            3.0,
         )
         .expect("failed to initialize arm"),
     };

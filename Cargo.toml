@@ -10,6 +10,7 @@ edition = "2021"
 slot = 1
 icon = "cool-x"
 compress = true
+upload-strategy = "differential"
 
 [dependencies]
 log = "0.4.22"
@@ -20,7 +21,8 @@ snafu = { version = "0.8.5", default-features = false, features = [
 ] }
 async-trait = "0.1.83"
 doxa-selector = { git = "https://github.com/doxa-robotics/doxa-selector-rs.git", branch = "main", default-features = false }
-vexide = { git = "https://github.com/vexide/vexide.git", branch = "main" }
+vexide = "0.7.0-beta.3"
+vexide-motorgroup = "1.0.1"
 
 [profile.release]
 strip = true

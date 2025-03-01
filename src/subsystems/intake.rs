@@ -6,7 +6,7 @@ use snafu::{ResultExt, Snafu};
 use vexide::{
     core::{sync::Mutex, time::Instant},
     devices::{smart::motor::MotorError, PortError},
-    prelude::{sleep, spawn, AdiLineTracker, BrakeMode, Direction, Motor},
+    prelude::{sleep, spawn, BrakeMode, Direction, Motor},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -32,12 +32,6 @@ pub enum IntakeState {
         reject_time: Option<Instant>,
     },
     Reverse,
-    PartialIntake {
-        start: Instant,
-    },
-    ArmIntake {
-        start: Instant,
-    },
     Stop,
 }
 
@@ -49,19 +43,15 @@ const LADY_BROWN_HOLD_DURATION: Duration = Duration::from_millis(3000);
 #[derive(Debug)]
 pub struct IntakeInner {
     motor: Motor,
-    partial_line_tracker: AdiLineTracker,
-    lady_brown_line_tracker: AdiLineTracker,
     state: IntakeState,
-    lady_brown_line_tracker_start: Option<Instant>,
-    ring_theshold: core::ops::Range<f64>,
 }
 
 #[derive(Debug, Snafu)]
 pub enum IntakeError {
     #[snafu(display("motor error: {}", source))]
     Motor { source: MotorError },
-    #[snafu(display("line tracker error: {}", source))]
-    LineTrackerPortError { source: PortError },
+    #[snafu(display("port error: {}", source))]
+    PortError { source: PortError },
 }
 
 impl IntakeInner {
@@ -82,23 +72,7 @@ impl IntakeInner {
                         .context(MotorSnafu)?;
                 }
                 if let Some(accept_color) = accept {
-                    let current_value = self
-                        .partial_line_tracker
-                        .reflectivity()
-                        .context(LineTrackerPortSnafu)?;
-                    if self.ring_theshold.contains(&current_value) {
-                        debug!("ring accepted, reflectivity: {}", current_value);
-                        // If there is a ring, test its color
-                        if accept_color.reflectivity().contains(&current_value) {
-                            debug!("ring color accepted");
-                        } else {
-                            debug!("ring color rejected");
-                            self.state = IntakeState::Forward {
-                                accept,
-                                reject_time: Some(Instant::now()),
-                            };
-                        }
-                    }
+                    // Handle ring color acceptance logic
                 }
             }
             IntakeState::Reverse => {
@@ -106,53 +80,8 @@ impl IntakeInner {
                     .set_voltage(-self.motor.max_voltage())
                     .context(MotorSnafu)?;
             }
-            IntakeState::PartialIntake { start } | IntakeState::ArmIntake { start } => {
-                if start.elapsed().as_millis() > TIMEOUT {
-                    error!("Partially intaking timeout");
-                    self.state = IntakeState::Stop;
-                } else {
-                    self.motor
-                        .set_voltage(self.motor.max_voltage())
-                        .context(MotorSnafu)?;
-                    let current_value = if matches!(self.state, IntakeState::PartialIntake { .. }) {
-                        self.partial_line_tracker
-                            .reflectivity()
-                            .context(LineTrackerPortSnafu)?
-                    } else {
-                        self.lady_brown_line_tracker
-                            .reflectivity()
-                            .context(LineTrackerPortSnafu)?
-                    };
-                    debug!("{:.2?}", current_value);
-                    if self.ring_theshold.contains(&current_value) {
-                        self.state = IntakeState::Stop;
-                    }
-                }
-            }
             IntakeState::Stop => {
-                if self.ring_theshold.contains(
-                    &self
-                        .partial_line_tracker
-                        .reflectivity()
-                        .context(LineTrackerPortSnafu)?,
-                ) {
-                    self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
-                } else if self.ring_theshold.contains(
-                    &self
-                        .lady_brown_line_tracker
-                        .reflectivity()
-                        .context(LineTrackerPortSnafu)?,
-                ) && (self.lady_brown_line_tracker_start.is_none()
-                    || self.lady_brown_line_tracker_start.unwrap().elapsed()
-                        < LADY_BROWN_HOLD_DURATION)
-                {
-                    if self.lady_brown_line_tracker_start.is_none() {
-                        self.lady_brown_line_tracker_start = Some(Instant::now());
-                    }
-                    self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
-                } else {
-                    self.motor.set_voltage(0.0).context(MotorSnafu)?;
-                }
+                self.motor.set_voltage(0.0).context(MotorSnafu)?;
             }
         }
         Ok(())
@@ -163,32 +92,11 @@ impl IntakeInner {
 pub struct Intake(Arc<Mutex<IntakeInner>>);
 
 impl Intake {
-    pub fn new(
-        motor: Motor,
-        partial_line_tracker: AdiLineTracker,
-        lady_brown_line_tracker: AdiLineTracker,
-    ) -> Self {
+    pub fn new(motor: Motor) -> Self {
         Self(Arc::new(Mutex::new(IntakeInner {
             motor,
-            ring_theshold: (partial_line_tracker.reflectivity().unwrap_or(0.35) + 0.05)..1.0,
-            partial_line_tracker,
-            lady_brown_line_tracker,
             state: IntakeState::Stop,
-            lady_brown_line_tracker_start: None,
         })))
-    }
-
-    pub async fn calibrate_reflectivity(&self) {
-        let mut inner = self.0.lock().await;
-        inner.ring_theshold =
-            (inner.partial_line_tracker.reflectivity().unwrap_or(0.35) + 0.05)..1.0;
-    }
-
-    pub async fn is_ring_released_in_lady_brown(&self) -> bool {
-        let inner = self.0.lock().await;
-        inner
-            .lady_brown_line_tracker_start
-            .is_some_and(|start| start.elapsed() > LADY_BROWN_HOLD_DURATION)
     }
 
     pub fn temperature(&self) -> f64 {
@@ -217,20 +125,6 @@ impl Intake {
     pub async fn stop(&self) {
         let mut inner = self.0.lock().await;
         inner.state = IntakeState::Stop;
-    }
-
-    pub async fn partial_intake(&self) {
-        let mut inner = self.0.lock().await;
-        inner.state = IntakeState::PartialIntake {
-            start: Instant::now(),
-        };
-    }
-
-    pub async fn arm_intake(&self) {
-        let mut inner = self.0.lock().await;
-        inner.state = IntakeState::ArmIntake {
-            start: Instant::now(),
-        };
     }
 
     pub async fn run(&self, direction: Direction) {
