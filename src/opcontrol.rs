@@ -1,13 +1,11 @@
 use core::time::Duration;
 
-use snafu::{ResultExt, Snafu};
+use libdoxa::subsystems::drivetrain::VoltagePair;
+use snafu::Snafu;
 use vexide::prelude::*;
 
 use crate::{
-    subsystems::{
-        clamp::ClampError, doinker::DoinkerError, drivetrain::DrivetrainError,
-        lady_brown::LadyBrownState,
-    },
+    subsystems::{drivetrain::DrivetrainError, lady_brown::LadyBrownState},
     Robot,
 };
 
@@ -22,10 +20,6 @@ fn curve_stick(input: f64) -> f64 {
 
 #[derive(Debug, Snafu)]
 pub enum OpcontrolError {
-    #[snafu(display("clamp error: {}", source))]
-    Clamp { source: ClampError },
-    #[snafu(display("doinker error: {}", source))]
-    Doinker { source: DoinkerError },
     #[snafu(display("drivetrain error: {}", source))]
     Drivetrain { source: DrivetrainError },
 }
@@ -41,14 +35,10 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         let left_percent = (speed + turn).clamp(-1.0, 1.0);
         let right_percent = (speed - turn).clamp(-1.0, 1.0);
 
-        robot
-            .drivetrain
-            .set_voltages(
-                Motor::V5_MAX_VOLTAGE * left_percent,
-                Motor::V5_MAX_VOLTAGE * right_percent,
-            )
-            .await
-            .context(DrivetrainSnafu)?;
+        robot.drivetrain.set_voltage(VoltagePair {
+            left: Motor::V5_MAX_VOLTAGE * left_percent,
+            right: Motor::V5_MAX_VOLTAGE * right_percent,
+        });
 
         if state.button_r1.is_now_pressed() {
             robot.intake.run(Direction::Forward).await;
@@ -85,7 +75,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         }
 
         if state.button_a.is_now_pressed() {
-            robot.clamp.toggle().context(ClampSnafu)?;
+            robot.clamp.toggle();
         }
 
         sleep(Duration::from_millis(10)).await;

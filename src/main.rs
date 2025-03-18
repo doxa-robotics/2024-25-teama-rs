@@ -5,30 +5,31 @@
 
 extern crate alloc;
 
-mod autonomous;
 mod opcontrol;
 mod subsystems;
 mod utils;
 
-use alloc::{string::ToString, sync::Arc, vec};
-use core::time::Duration;
+use alloc::{
+    rc::Rc,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
+use core::{cell::RefCell, time::Duration};
 
 use doxa_selector::{CompeteWithSelector, CompeteWithSelectorExt};
+use libdoxa::{subsystems::tracking::wheel::TrackingWheel, utils::vec2::Vec2};
 use log::{error, info};
-use subsystems::{
-    clamp::Clamp,
-    drivetrain::{Drivetrain, DrivetrainConfig},
-    intake::Intake,
-    lady_brown::LadyBrown,
-};
+use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp};
 use utils::logger;
-use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO, sync::Mutex};
+use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 use vexide_motorgroup::MotorGroup;
 
 struct Robot {
     controller: Controller,
 
-    drivetrain: Drivetrain,
+    inertial: Rc<RefCell<InertialSensor>>,
+    drivetrain: libdoxa::subsystems::drivetrain::Drivetrain,
 
     intake: Intake,
     clamp: Clamp,
@@ -36,8 +37,8 @@ struct Robot {
 }
 
 impl CompeteWithSelector for Robot {
-    type Category = autonomous::Category;
-    type Return = autonomous::Return;
+    type Category = String;
+    type Return = ();
 
     fn autonomous_routes<'a, 'b>(
         &'b self,
@@ -48,7 +49,10 @@ impl CompeteWithSelector for Robot {
     where
         Self: 'a,
     {
-        autonomous::autonomous_routes()
+        alloc::collections::btree_map::BTreeMap::<
+            String,
+            Vec<&'a dyn doxa_selector::AutonRoutine<Self, Return = Self::Return>>,
+        >::new()
     }
 
     async fn driver(&mut self) {
@@ -62,27 +66,27 @@ impl CompeteWithSelector for Robot {
     }
 
     fn calibrate_gyro(&mut self) {
-        self.drivetrain.calibrate_inertial();
+        _ = self.inertial.borrow_mut().calibrate();
     }
 
     fn is_gyro_calibrating(&self) -> bool {
-        self.drivetrain.is_inertial_calibrating()
+        self.inertial.borrow().is_calibrating().unwrap_or(false)
     }
 
     fn diagnostics(&self) -> vec::Vec<(alloc::string::String, alloc::string::String)> {
         vec![
             (
                 "Gyro".to_string(),
-                if self.drivetrain.is_inertial_calibrating() {
+                if self.inertial.borrow().is_calibrating().unwrap_or(false) {
                     "Calibrating".to_string()
                 } else {
-                    self.drivetrain.inertial_heading().to_string()
+                    self.inertial.borrow().heading().unwrap_or(-1.0).to_string()
                 },
             ),
-            (
+            /*(
                 "Drivetrain temp (C)".to_string(),
                 self.drivetrain.temperature().to_string(),
-            ),
+            ),*/
             (
                 "Arm temp (C)".to_string(),
                 self.lady_brown.temperature().to_string(),
@@ -109,39 +113,46 @@ impl CompeteWithSelector for Robot {
 async fn main(peripherals: Peripherals) {
     logger::init().expect("failed to initialize logger");
 
-    let left_motors = Arc::new(Mutex::new(MotorGroup::new(vec![
+    let left_motors = Rc::new(RefCell::new(MotorGroup::new(vec![
         Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
         Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
         Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
     ])));
-    let right_motors = Arc::new(Mutex::new(MotorGroup::new(vec![
+    let right_motors = Rc::new(RefCell::new(MotorGroup::new(vec![
         Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
         Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
         Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
     ])));
-    let inertial = Arc::new(Mutex::new(InertialSensor::new(peripherals.port_20)));
+    let inertial = Rc::new(RefCell::new(InertialSensor::new(peripherals.port_20)));
 
     let robot = Robot {
         controller: peripherals.primary_controller,
-        drivetrain: Drivetrain::new(
+        inertial: inertial.clone(),
+        drivetrain: libdoxa::subsystems::drivetrain::Drivetrain::new(
             left_motors.clone(),
             right_motors.clone(),
-            inertial.clone(),
-            DrivetrainConfig {
-                drive_p: 0.065,
-                drive_i: 0.0,
-                drive_d: 0.48,
-                drive_tolerance: 5.0,
-
-                turning_p: 0.28,
-                turning_i: 0.0,
-                turning_d: 0.7,
-                turning_tolerance: 5.0,
-
-                tolerance_velocity: 10.0,
-                timeout: Duration::from_millis(500),
-                wheel_circumference: 165.0,
-            },
+            65.0,
+            libdoxa::subsystems::tracking::TrackingSubsystem::new([
+                TrackingWheel::new(
+                    158.0,
+                    122.0,
+                    libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Perpendicular,
+                    RotationSensor::new(peripherals.port_17, Direction::Forward),
+                )
+            ], [
+                TrackingWheel::new(
+                    165.0,
+                    0.0,
+                    libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
+                    left_motors,
+                ),
+                TrackingWheel::new(
+                    165.0,
+                    0.0,
+                    libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
+                    right_motors,
+                )
+            ], inertial.clone(), Vec2::default()),
         ),
 
         intake: Intake::new(Motor::new(
@@ -149,7 +160,7 @@ async fn main(peripherals: Peripherals) {
             Gearset::Blue,
             Direction::Reverse,
         )),
-        clamp: Clamp::new(AdiDigitalOut::new(peripherals.adi_a)),
+        clamp: Clamp::new([AdiDigitalOut::new(peripherals.adi_a)]),
         lady_brown: LadyBrown::new(
             MotorGroup::new(vec![
                 Motor::new_exp(peripherals.port_1, Direction::Forward),
@@ -161,7 +172,7 @@ async fn main(peripherals: Peripherals) {
     };
 
     info!("-- Status --");
-    info!("Drivetrain temp: {:?}", robot.drivetrain.temperature());
+    // info!("Drivetrain temp: {:?}", robot.drivetrain.temperature());
     info!("Arm temp: {:?}", robot.lady_brown.temperature());
     info!("Intake temp: {:?}", robot.intake.temperature());
 
