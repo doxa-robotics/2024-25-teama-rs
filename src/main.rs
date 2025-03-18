@@ -17,13 +17,13 @@ use doxa_selector::{CompeteWithSelector, CompeteWithSelectorExt};
 use log::{error, info};
 use subsystems::{
     clamp::Clamp,
-    doinker::Doinker,
     drivetrain::{Drivetrain, DrivetrainConfig},
     intake::Intake,
     lady_brown::LadyBrown,
 };
-use utils::{logger, motor_group::MotorGroup};
+use utils::logger;
 use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO, sync::Mutex};
+use vexide_motorgroup::MotorGroup;
 
 struct Robot {
     controller: Controller,
@@ -109,22 +109,16 @@ impl CompeteWithSelector for Robot {
 async fn main(peripherals: Peripherals) {
     logger::init().expect("failed to initialize logger");
 
-    let left_motors = Arc::new(Mutex::new(MotorGroup::from_ports(
-        vec![
-            (peripherals.port_7, true),
-            (peripherals.port_6, true),
-            (peripherals.port_5, true),
-        ],
-        Gearset::Blue,
-    )));
-    let right_motors = Arc::new(Mutex::new(MotorGroup::from_ports(
-        vec![
-            (peripherals.port_10, false),
-            (peripherals.port_9, false),
-            (peripherals.port_8, false),
-        ],
-        Gearset::Blue,
-    )));
+    let left_motors = Arc::new(Mutex::new(MotorGroup::new(vec![
+        Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
+        Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
+        Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
+    ])));
+    let right_motors = Arc::new(Mutex::new(MotorGroup::new(vec![
+        Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+        Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
+        Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
+    ])));
     let inertial = Arc::new(Mutex::new(InertialSensor::new(peripherals.port_20)));
 
     let robot = Robot {

@@ -4,20 +4,19 @@ use core::time::Duration;
 use log::{debug, info, warn};
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    devices::smart::{imu::InertialError, motor::MotorError},
+    devices::smart::imu::InertialError,
     prelude::{sleep, spawn, Float, InertialSensor, Motor, SmartDevice},
     sync::Mutex,
     time::Instant,
 };
-
-use super::super::utils::motor_group::MotorGroup;
+use vexide_motorgroup::{MotorGroup, MotorGroupError};
 
 const SIGN_ERROR_CHECK_DELAY: Duration = Duration::from_millis(100);
 
 #[derive(Debug, Snafu)]
 pub enum DrivetrainError {
     #[snafu(display("motor error: {}", source))]
-    Motor { source: MotorError },
+    Motor { source: MotorGroupError },
     #[snafu(display("inertial error: {}", source))]
     Inertial { source: InertialError },
 }

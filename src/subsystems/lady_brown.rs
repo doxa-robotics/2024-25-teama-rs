@@ -4,12 +4,10 @@ use core::f64;
 use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    devices::smart::motor::MotorError,
     prelude::{sleep, spawn, Motor, Position},
     sync::Mutex,
 };
-
-use crate::utils::motor_group::MotorGroup;
+use vexide_motorgroup::{MotorGroup, MotorGroupError};
 
 #[derive(Debug, Clone, Copy)]
 pub enum LadyBrownState {
@@ -70,7 +68,7 @@ pub struct LadyBrown(Arc<Mutex<LadyBrownInner>>);
 #[derive(Debug, Snafu)]
 pub enum LadyBrownError {
     #[snafu(display("motor error: {}", source))]
-    Motor { source: MotorError },
+    Motor { source: MotorGroupError },
 }
 
 impl LadyBrown {
