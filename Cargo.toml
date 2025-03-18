@@ -21,7 +21,7 @@ snafu = { version = "0.8.5", default-features = false, features = [
 ] }
 async-trait = "0.1.83"
 doxa-selector = { git = "https://github.com/doxa-robotics/doxa-selector-rs.git", branch = "main", default-features = false }
-vexide = "0.7.0-beta.3"
+vexide = "0.7.0"
 vexide-motorgroup = "1.0.1"
 
 [profile.release]

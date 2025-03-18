@@ -1,10 +1,8 @@
 use alloc::boxed::Box;
-use core::time::Duration;
 
 use async_trait::async_trait;
 use doxa_selector::AutonRoutine;
 use log::debug;
-use vexide::{core::println, prelude::sleep};
 
 use crate::Robot;
 

@@ -3,12 +3,13 @@ use core::time::Duration;
 
 use log::{error, Level, Metadata, Record, SetLoggerError};
 use vexide::{
-    core::{println, sync::Mutex},
+    io::println,
     prelude::{spawn, Write},
+    sync::Mutex,
 };
 
 struct SimpleLogger {
-    file: Arc<Mutex<Option<vexide::core::fs::File>>>,
+    file: Arc<Mutex<Option<vexide::fs::File>>>,
 }
 // Safety: The brain is single-threaded. Hopefully.
 unsafe impl core::marker::Sync for SimpleLogger {}
@@ -20,7 +21,7 @@ impl SimpleLogger {
             // We're being very unsafe here.
             #[allow(clippy::arc_with_non_send_sync)]
             file: Arc::new(Mutex::new(
-                vexide::core::fs::File::options()
+                vexide::fs::File::options()
                     .write(true)
                     .append(true)
                     .open("log.txt")
@@ -41,8 +42,8 @@ impl log::Log for SimpleLogger {
             // If we're connected to the field control, writing to stdout doesn't go
             // anywhere and is a waste of time.
             if !matches!(
-                vexide::core::competition::system(),
-                Some(vexide::core::competition::CompetitionSystem::FieldControl)
+                vexide::competition::system(),
+                Some(vexide::competition::CompetitionSystem::FieldControl)
             ) {
                 println!("{} - {}", record.level(), record.args());
             }
@@ -52,7 +53,7 @@ impl log::Log for SimpleLogger {
                 }
             } else {
                 spawn(async {
-                    vexide::async_runtime::time::sleep(Duration::from_millis(100)).await;
+                    vexide::time::sleep(Duration::from_millis(100)).await;
                     error!("Failed to lock log file (slept 100ms). 1 message was ignored.");
                 })
                 .detach();
@@ -64,7 +65,7 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {
         let file = self.file.clone();
         spawn(async move {
-            vexide::core::io::stdout().lock().await.flush().ok();
+            vexide::io::stdout().lock().await.flush().ok();
             if let Some(file) = file.lock().await.as_mut() {
                 file.flush().ok();
             }

@@ -23,7 +23,7 @@ use subsystems::{
     lady_brown::LadyBrown,
 };
 use utils::{logger, motor_group::MotorGroup};
-use vexide::{core::sync::Mutex, prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
+use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO, sync::Mutex};
 
 struct Robot {
     controller: Controller,

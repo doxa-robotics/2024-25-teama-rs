@@ -4,9 +4,9 @@ use core::f64;
 use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::sync::Mutex,
     devices::smart::motor::MotorError,
     prelude::{sleep, spawn, Motor, Position},
+    sync::Mutex,
 };
 
 use crate::utils::motor_group::MotorGroup;

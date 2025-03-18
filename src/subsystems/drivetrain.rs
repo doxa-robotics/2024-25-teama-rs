@@ -4,9 +4,10 @@ use core::time::Duration;
 use log::{debug, info, warn};
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{sync::Mutex, time::Instant},
     devices::smart::{imu::InertialError, motor::MotorError},
     prelude::{sleep, spawn, Float, InertialSensor, Motor, SmartDevice},
+    sync::Mutex,
+    time::Instant,
 };
 
 use super::super::utils::motor_group::MotorGroup;

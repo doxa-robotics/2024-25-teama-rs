@@ -1,12 +1,13 @@
 use alloc::sync::Arc;
 use core::time::Duration;
 
-use log::{debug, error};
+use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    core::{sync::Mutex, time::Instant},
     devices::{smart::motor::MotorError, PortError},
     prelude::{sleep, spawn, BrakeMode, Direction, Motor},
+    sync::Mutex,
+    time::Instant,
 };
 
 #[derive(Debug, Clone, Copy)]
