@@ -131,6 +131,7 @@ async fn main(peripherals: Peripherals) {
         drivetrain: libdoxa::subsystems::drivetrain::Drivetrain::new(
             left_motors.clone(),
             right_motors.clone(),
+            inertial.clone(),
             65.0,
             libdoxa::subsystems::tracking::TrackingSubsystem::new([
                 TrackingWheel::new(
@@ -160,7 +161,7 @@ async fn main(peripherals: Peripherals) {
             Gearset::Blue,
             Direction::Reverse,
         )),
-        clamp: Clamp::new([AdiDigitalOut::new(peripherals.adi_a)]),
+        clamp: Clamp::new([AdiDigitalOut::new(peripherals.adi_b)]),
         lady_brown: LadyBrown::new(
             MotorGroup::new(vec![
                 Motor::new_exp(peripherals.port_1, Direction::Forward),
