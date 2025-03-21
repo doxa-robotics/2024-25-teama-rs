@@ -4,10 +4,7 @@ use libdoxa::subsystems::drivetrain::VoltagePair;
 use snafu::Snafu;
 use vexide::prelude::*;
 
-use crate::{
-    subsystems::{drivetrain::DrivetrainError, lady_brown::LadyBrownState},
-    Robot,
-};
+use crate::{subsystems::lady_brown::LadyBrownState, Robot};
 
 fn curve_stick(input: f64) -> f64 {
     let raw = input.powf(2.0);
@@ -19,10 +16,7 @@ fn curve_stick(input: f64) -> f64 {
 }
 
 #[derive(Debug, Snafu)]
-pub enum OpcontrolError {
-    #[snafu(display("drivetrain error: {}", source))]
-    Drivetrain { source: DrivetrainError },
-}
+pub enum OpcontrolError {}
 
 pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
     robot.intake.stop().await;
