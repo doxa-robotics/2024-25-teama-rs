@@ -20,7 +20,7 @@ use core::{cell::RefCell, time::Duration};
 use doxa_selector::{CompeteWithSelector, CompeteWithSelectorExt};
 use libdoxa::{subsystems::tracking::wheel::TrackingWheel, utils::vec2::Vec2};
 use log::{error, info};
-use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp};
+use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp, Doinker, IntakeRaiser};
 use utils::logger;
 use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 use vexide_motorgroup::MotorGroup;
@@ -32,29 +32,13 @@ struct Robot {
     drivetrain: libdoxa::subsystems::drivetrain::Drivetrain,
 
     intake: Intake,
+    intake_raiser: IntakeRaiser,
+    doinker: Doinker,
     clamp: Clamp,
     lady_brown: LadyBrown,
 }
 
-impl CompeteWithSelector for Robot {
-    type Category = String;
-    type Return = ();
-
-    fn autonomous_routes<'a, 'b>(
-        &'b self,
-    ) -> alloc::collections::btree_map::BTreeMap<
-        Self::Category,
-        impl AsRef<[&'a dyn doxa_selector::AutonRoutine<Self, Return = Self::Return>]>,
-    >
-    where
-        Self: 'a,
-    {
-        alloc::collections::btree_map::BTreeMap::<
-            String,
-            Vec<&'a dyn doxa_selector::AutonRoutine<Self, Return = Self::Return>>,
-        >::new()
-    }
-
+impl Compete for Robot {
     async fn driver(&mut self) {
         info!("Driver starting");
 
@@ -65,48 +49,7 @@ impl CompeteWithSelector for Robot {
         }
     }
 
-    fn calibrate_gyro(&mut self) {
-        _ = self.inertial.borrow_mut().calibrate();
-    }
-
-    fn is_gyro_calibrating(&self) -> bool {
-        self.inertial.borrow().is_calibrating().unwrap_or(false)
-    }
-
-    fn diagnostics(&self) -> vec::Vec<(alloc::string::String, alloc::string::String)> {
-        vec![
-            (
-                "Gyro".to_string(),
-                if self.inertial.borrow().is_calibrating().unwrap_or(false) {
-                    "Calibrating".to_string()
-                } else {
-                    self.inertial.borrow().heading().unwrap_or(-1.0).to_string()
-                },
-            ),
-            /*(
-                "Drivetrain temp (C)".to_string(),
-                self.drivetrain.temperature().to_string(),
-            ),*/
-            (
-                "Arm temp (C)".to_string(),
-                self.lady_brown.temperature().to_string(),
-            ),
-            (
-                "Intake temp (C)".to_string(),
-                self.intake.temperature().to_string(),
-            ),
-        ]
-    }
-
-    fn controller(&self) -> Option<&vexide::devices::controller::Controller> {
-        Some(&self.controller)
-    }
-
-    fn autonomous_route_started(
-        &mut self,
-        _route: &dyn doxa_selector::AutonRoutine<Self, Return = Self::Return>,
-    ) {
-    }
+    async fn autonomous(&mut self) {}
 }
 
 #[vexide::main(banner(theme = THEME_OFFICIAL_LOGO))]
@@ -128,6 +71,16 @@ async fn main(peripherals: Peripherals) {
     let robot = Robot {
         controller: peripherals.primary_controller,
         inertial: inertial.clone(),
+        intake_raiser: IntakeRaiser::new([AdiDigitalOut::new(peripherals.adi_c)]),
+        doinker: Doinker::new(
+            [
+                AdiDigitalOut::new(peripherals.adi_d),
+            ],
+            [
+                AdiDigitalOut::new(peripherals.adi_e),
+            ],
+            libdoxa::subsystems::pneumatic::MirroredState::Normal,
+        ),
         drivetrain: libdoxa::subsystems::drivetrain::Drivetrain::new(
             left_motors.clone(),
             right_motors.clone(),
@@ -160,7 +113,7 @@ async fn main(peripherals: Peripherals) {
             peripherals.port_4,
             Gearset::Blue,
             Direction::Reverse,
-        )),
+        ), VisionSensor::new(peripherals.port_11)),
         clamp: Clamp::new([AdiDigitalOut::new(peripherals.adi_b)]),
         lady_brown: LadyBrown::new(
             MotorGroup::new(vec![
@@ -182,5 +135,5 @@ async fn main(peripherals: Peripherals) {
     robot.intake.task();
 
     info!("entering competing");
-    robot.compete_with_selector(peripherals.display, None).await;
+    robot.compete().await;
 }
