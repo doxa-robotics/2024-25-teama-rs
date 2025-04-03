@@ -207,7 +207,7 @@ impl Intake {
         let mut inner = self.0.lock().await;
         inner.state = match direction {
             Direction::Forward => IntakeState::Forward {
-                accept: Some(RingColor::Red),
+                accept: None,
                 reject_time: None,
             },
             Direction::Reverse => IntakeState::Reverse,
