@@ -33,3 +33,4 @@ lto = true
 [features]
 default = ["ui"]
 ui = ["doxa-selector/ui"]
+simplified_controls = []  # simplified controls for interactive fundraising demos
