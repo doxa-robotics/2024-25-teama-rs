@@ -9,7 +9,8 @@ use vexide::{
         PortError,
     },
     prelude::{
-        sleep, spawn, BrakeMode, Direction, Motor, VisionMode, VisionSensor, VisionSignature,
+        sleep, spawn, BrakeMode, Direction, DistanceSensor, Motor, VisionMode, VisionSensor,
+        VisionSignature,
     },
     sync::Mutex,
     time::Instant,
@@ -17,6 +18,9 @@ use vexide::{
 
 const RED_SIGNATURE: u8 = 1;
 const BLUE_SIGNATURE: u8 = 2;
+const JAM_CURRENT: f64 = 2.6;
+const JAM_OVERCURRENT_TIME: Duration = Duration::from_millis(1000);
+const JAM_REVERSE_TIME: Duration = Duration::from_millis(200);
 
 #[derive(Debug, Clone, Copy)]
 #[allow(unused)]
@@ -50,6 +54,8 @@ pub enum IntakeState {
     Forward {
         accept: Option<RingColor>,
         reject_time: Option<Instant>,
+        jam_time: Option<Instant>,
+        overcurrent_time: Option<Instant>,
     },
     Reverse,
     Stop,
@@ -57,15 +63,8 @@ pub enum IntakeState {
 }
 
 const TIMEOUT: u128 = 3000;
-const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(300);
+const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(100);
 const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(1000);
-
-#[derive(Debug)]
-pub struct IntakeInner {
-    motor: Motor,
-    vision: VisionSensor,
-    state: IntakeState,
-}
 
 #[derive(Debug, Snafu)]
 pub enum IntakeError {
@@ -79,65 +78,14 @@ pub enum IntakeError {
     },
 }
 
-impl IntakeInner {
-    async fn update(&mut self) -> Result<(), IntakeError> {
-        match self.state {
-            IntakeState::Forward {
-                accept,
-                ref mut reject_time,
-            } => {
-                if let Some(reject_time) = reject_time
-                    && (RING_REJECT_STOP_TIME..RING_REJECT_RESTART_TIME)
-                        .contains(&reject_time.elapsed())
-                {
-                    self.motor.brake(BrakeMode::Brake).context(MotorSnafu)?;
-                } else {
-                    self.motor
-                        .set_voltage(self.motor.max_voltage())
-                        .context(MotorSnafu)?;
-                }
-                if let Some(accept_color) = accept
-                    && reject_time.is_none()
-                {
-                    match self.vision.objects() {
-                        Ok(objects) => {
-                            for object in objects {
-                                if let DetectionSource::Signature(sig) = object.source {
-                                    log::debug!("ring: {:?}", object.source);
-                                    if sig == (!accept_color).signature() {
-                                        log::debug!("intake rejected ring: {:?}", object.source);
-                                        *reject_time = Some(Instant::now());
-                                    }
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            log::warn!("vision error: {}", err);
-                        }
-                    }
-                }
-            }
-            IntakeState::Reverse => {
-                self.motor
-                    .set_voltage(-self.motor.max_voltage())
-                    .context(MotorSnafu)?;
-            }
-            IntakeState::Stop => {
-                self.motor.brake(BrakeMode::Coast).context(MotorSnafu)?;
-            }
-            IntakeState::StopHold => {
-                self.motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
-            }
-        }
-        Ok(())
-    }
+#[derive(Debug, Clone)]
+pub struct Intake {
+    state: Arc<Mutex<IntakeState>>,
+    _task: Arc<vexide::task::Task<()>>,
 }
 
-#[derive(Debug, Clone)]
-pub struct Intake(Arc<Mutex<IntakeInner>>);
-
 impl Intake {
-    pub fn new(motor: Motor, mut vision: VisionSensor) -> Self {
+    pub fn new(mut motor: Motor, mut vision: VisionSensor, mut distance: DistanceSensor) -> Self {
         vision
             .set_mode(VisionMode::ColorDetection)
             .expect("failed to set vision mode");
@@ -163,62 +111,140 @@ impl Intake {
                 },
             )
             .expect("failed to initialize vision blue signature");
-        Self(Arc::new(Mutex::new(IntakeInner {
-            motor,
-            vision,
-            state: IntakeState::Stop,
-        })))
-    }
 
-    pub fn temperature(&self) -> f64 {
-        match self.0.try_lock() {
-            Some(inner) => inner.motor.temperature().unwrap_or(0.0),
-            None => 0.0,
+        let state = Arc::new(Mutex::new(IntakeState::Stop));
+        Self {
+            state: state.clone(),
+            _task: Arc::new(spawn({
+                async move {
+                    loop {
+                        let mut state = state.lock().await;
+                        if let Err(err) =
+                            Intake::update(&mut motor, &mut vision, &mut distance, &mut state).await
+                        {
+                            error!("intake update error: {}", err);
+                        }
+                        drop(state);
+
+                        sleep(super::SUBSYSTEM_UPDATE_PERIOD).await;
+                    }
+                }
+            })),
         }
     }
 
-    pub fn task(&self) {
-        let inner = self.0.clone();
-        spawn(async move {
-            loop {
-                let mut inner = inner.lock().await;
-                if let Err(err) = inner.update().await {
-                    error!("intake update error: {}", err);
+    async fn update(
+        motor: &mut Motor,
+        vision: &mut VisionSensor,
+        distance: &mut DistanceSensor,
+        state: &mut IntakeState,
+    ) -> Result<(), IntakeError> {
+        match state {
+            IntakeState::Forward {
+                accept,
+                ref mut reject_time,
+                ref mut jam_time,
+                ref mut overcurrent_time,
+            } => {
+                if let Ok(current) = motor.current() {
+                    log::debug!("intake current: {}", current);
+                    if current > JAM_CURRENT {
+                        if let Some(overcurrent_time) = overcurrent_time {
+                            if overcurrent_time.elapsed() > JAM_OVERCURRENT_TIME {
+                                log::warn!("intake jammed, reversing");
+                                *jam_time = Some(Instant::now());
+                            }
+                        } else {
+                            *jam_time = Some(Instant::now());
+                        }
+                    }
+                } else {
+                    log::warn!("failed to get motor current");
                 }
-                drop(inner);
-
-                sleep(super::SUBSYSTEM_UPDATE_PERIOD).await;
+                if let Some(jammed_time) = jam_time {
+                    if jammed_time.elapsed() > JAM_REVERSE_TIME {
+                        *jam_time = None;
+                        *overcurrent_time = None;
+                    }
+                }
+                if let Some(reject_time) = reject_time
+                    && (RING_REJECT_STOP_TIME..RING_REJECT_RESTART_TIME)
+                        .contains(&reject_time.elapsed())
+                {
+                    motor.brake(BrakeMode::Brake).context(MotorSnafu)?;
+                } else if jam_time.is_some() {
+                    motor
+                        .set_voltage(-motor.max_voltage())
+                        .context(MotorSnafu)?;
+                } else {
+                    motor.set_voltage(motor.max_voltage()).context(MotorSnafu)?;
+                }
+                if let Some(accept_color) = accept
+                    && reject_time.is_none()
+                {
+                    match vision.objects() {
+                        Ok(objects) => {
+                            for object in objects {
+                                if let DetectionSource::Signature(sig) = object.source {
+                                    log::debug!("ring: {:?}", object.source);
+                                    if sig == (!*accept_color).signature() {
+                                        log::debug!("intake rejected ring: {:?}", object.source);
+                                        *reject_time = Some(Instant::now());
+                                    }
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            log::warn!("vision error: {}", err);
+                        }
+                    }
+                }
             }
-        })
-        .detach();
+            IntakeState::Reverse => {
+                motor
+                    .set_voltage(-motor.max_voltage())
+                    .context(MotorSnafu)?;
+            }
+            IntakeState::Stop => {
+                motor.brake(BrakeMode::Coast).context(MotorSnafu)?;
+            }
+            IntakeState::StopHold => {
+                motor.brake(BrakeMode::Hold).context(MotorSnafu)?;
+            }
+        }
+        Ok(())
     }
 
     pub async fn stop(&self) {
-        let mut inner = self.0.lock().await;
-        inner.state = IntakeState::Stop;
+        let mut state = self.state.lock().await;
+        *state = IntakeState::Stop;
     }
 
     pub async fn stop_hold(&self) {
-        let mut inner = self.0.lock().await;
-        inner.state = IntakeState::StopHold;
+        let mut state = self.state.lock().await;
+        *state = IntakeState::StopHold;
     }
 
     pub async fn run(&self, direction: Direction) {
-        let mut inner = self.0.lock().await;
-        inner.state = match direction {
+        let mut state = self.state.lock().await;
+        *state = match direction {
             Direction::Forward => IntakeState::Forward {
                 accept: None,
                 reject_time: None,
+                jam_time: None,
+                overcurrent_time: None,
             },
             Direction::Reverse => IntakeState::Reverse,
         };
     }
 
     pub async fn run_forward_accept(&self, color: RingColor) {
-        let mut inner = self.0.lock().await;
-        inner.state = IntakeState::Forward {
+        let mut state = self.state.lock().await;
+        *state = IntakeState::Forward {
             accept: Some(color),
             reject_time: None,
+            jam_time: None,
+            overcurrent_time: None,
         };
     }
 }
