@@ -17,7 +17,6 @@ use alloc::{
 };
 use core::{cell::RefCell, time::Duration};
 
-use doxa_selector::{CompeteWithSelector, CompeteWithSelectorExt};
 use libdoxa::{subsystems::tracking::wheel::TrackingWheel, utils::vec2::Vec2};
 use log::{error, info};
 use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp, Doinker, IntakeRaiser};
@@ -109,11 +108,11 @@ async fn main(peripherals: Peripherals) {
             ], inertial.clone(), Vec2::default()),
         ),
 
-        intake: Intake::new(Motor::new(
-            peripherals.port_4,
-            Gearset::Blue,
-            Direction::Reverse,
-        ), VisionSensor::new(peripherals.port_11)),
+        intake: Intake::new(
+            Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
+            VisionSensor::new(peripherals.port_11),
+            DistanceSensor::new(peripherals.port_12),
+        ),
         clamp: Clamp::new([AdiDigitalOut::new(peripherals.adi_b)]),
         lady_brown: LadyBrown::new(
             MotorGroup::new(vec![
@@ -128,11 +127,9 @@ async fn main(peripherals: Peripherals) {
     info!("-- Status --");
     // info!("Drivetrain temp: {:?}", robot.drivetrain.temperature());
     info!("Arm temp: {:?}", robot.lady_brown.temperature());
-    info!("Intake temp: {:?}", robot.intake.temperature());
 
     info!("starting subsystem background tasks");
     robot.lady_brown.task();
-    robot.intake.task();
 
     info!("entering competing");
     robot.compete().await;

@@ -20,7 +20,6 @@ snafu = { version = "0.8.5", default-features = false, features = [
     "unstable-core-error",
 ] }
 async-trait = "0.1.83"
-doxa-selector = { git = "https://github.com/doxa-robotics/doxa-selector-rs.git", branch = "main", default-features = false }
 vexide = "0.7.0"
 vexide-motorgroup = "2.0.0"
 libdoxa = { path = "../libdoxa" }
@@ -31,6 +30,5 @@ opt-level = "z"
 lto = true
 
 [features]
-default = ["ui"]
-ui = ["doxa-selector/ui"]
-simplified_controls = []  # simplified controls for interactive fundraising demos
+default = []
+simplified_controls = [] # simplified controls for interactive fundraising demos
