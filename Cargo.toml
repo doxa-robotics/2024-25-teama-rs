@@ -23,6 +23,7 @@ async-trait = "0.1.83"
 vexide = "0.7.0"
 vexide-motorgroup = "2.0.0"
 libdoxa = { path = "../libdoxa" }
+colorsys = { version = "0.6.7", default-features = false }
 
 [profile.release]
 strip = true

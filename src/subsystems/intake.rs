@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use core::{ops::Not, time::Duration};
 
+use colorsys::{Hsl, Rgb};
 use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
@@ -8,6 +9,7 @@ use vexide::{
         smart::{motor::MotorError, vision::DetectionSource},
         PortError,
     },
+    float::Float as _,
     prelude::{
         sleep, spawn, BrakeMode, Direction, DistanceSensor, Motor, VisionMode, VisionSensor,
         VisionSignature,
@@ -21,8 +23,10 @@ const BLUE_SIGNATURE: u8 = 2;
 const JAM_CURRENT: f64 = 2.6;
 const JAM_OVERCURRENT_TIME: Duration = Duration::from_millis(1000);
 const JAM_REVERSE_TIME: Duration = Duration::from_millis(200);
+const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(000);
+const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(600);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(unused)]
 pub enum RingColor {
     Red,
@@ -53,6 +57,7 @@ impl Not for RingColor {
 pub enum IntakeState {
     Forward {
         accept: Option<RingColor>,
+        current_ring: Option<RingColor>,
         reject_time: Option<Instant>,
         jam_time: Option<Instant>,
         overcurrent_time: Option<Instant>,
@@ -61,10 +66,6 @@ pub enum IntakeState {
     Stop,
     StopHold,
 }
-
-const TIMEOUT: u128 = 3000;
-const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(100);
-const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(1000);
 
 #[derive(Debug, Snafu)]
 pub enum IntakeError {
@@ -104,8 +105,8 @@ impl Intake {
             .set_signature(
                 BLUE_SIGNATURE,
                 VisionSignature {
-                    range: 5.0,
-                    u_threshold: (-4097, -3559, -3828),
+                    range: 8.0,
+                    u_threshold: (-5097, -3559, -2828),
                     v_threshold: (5605, 7797, 6701),
                     flags: 0,
                 },
@@ -117,6 +118,7 @@ impl Intake {
             state: state.clone(),
             _task: Arc::new(spawn({
                 async move {
+                    let start = Instant::now();
                     loop {
                         let mut state = state.lock().await;
                         if let Err(err) =
@@ -125,6 +127,17 @@ impl Intake {
                             error!("intake update error: {}", err);
                         }
                         drop(state);
+                        // Fade the LED!
+                        let color = Rgb::from(Hsl::new(
+                            (start.elapsed().as_millis() as f64 / 20.0).rem_euclid(360.0),
+                            100.0,
+                            50.0,
+                            None,
+                        ));
+                        _ = vision.set_led_mode(vexide::prelude::LedMode::Manual(
+                            (color.red() as u8, color.green() as u8, color.blue() as u8).into(),
+                            1.0,
+                        ));
 
                         sleep(super::SUBSYSTEM_UPDATE_PERIOD).await;
                     }
@@ -145,9 +158,9 @@ impl Intake {
                 ref mut reject_time,
                 ref mut jam_time,
                 ref mut overcurrent_time,
+                ref mut current_ring,
             } => {
                 if let Ok(current) = motor.current() {
-                    log::debug!("intake current: {}", current);
                     if current > JAM_CURRENT {
                         if let Some(overcurrent_time) = overcurrent_time {
                             if overcurrent_time.elapsed() > JAM_OVERCURRENT_TIME {
@@ -181,24 +194,37 @@ impl Intake {
                 } else {
                     motor.set_voltage(motor.max_voltage()).context(MotorSnafu)?;
                 }
-                if let Some(accept_color) = accept
-                    && reject_time.is_none()
-                {
+                if let Some(accept_color) = accept {
                     match vision.objects() {
                         Ok(objects) => {
                             for object in objects {
                                 if let DetectionSource::Signature(sig) = object.source {
-                                    log::debug!("ring: {:?}", object.source);
-                                    if sig == (!*accept_color).signature() {
-                                        log::debug!("intake rejected ring: {:?}", object.source);
-                                        *reject_time = Some(Instant::now());
+                                    match sig {
+                                        RED_SIGNATURE => *current_ring = Some(RingColor::Red),
+                                        BLUE_SIGNATURE => *current_ring = Some(RingColor::Blue),
+                                        _ => {}
                                     }
+                                    log::debug!("ring: {:?}", current_ring);
                                 }
                             }
                         }
                         Err(err) => {
                             log::warn!("vision error: {}", err);
                         }
+                    }
+                    if reject_time.is_none()
+                        && let Ok(Some(object)) = distance.object()
+                        && object.distance < 50
+                        && let Some(current_ring) = current_ring
+                        && *current_ring != *accept_color
+                    {
+                        log::debug!("intake rejected ring: {:?}", current_ring);
+                        *reject_time = Some(Instant::now());
+
+                        /*if sig == (!*accept_color).signature() {
+                            log::debug!("intake rejected ring: {:?}", object.source);
+                            *reject_time = Some(Instant::now());
+                        }*/
                     }
                 }
             }
@@ -231,10 +257,11 @@ impl Intake {
         let mut state = self.state.lock().await;
         *state = match direction {
             Direction::Forward => IntakeState::Forward {
-                accept: None,
+                accept: Some(RingColor::Blue),
                 reject_time: None,
                 jam_time: None,
                 overcurrent_time: None,
+                current_ring: None,
             },
             Direction::Reverse => IntakeState::Reverse,
         };
@@ -247,6 +274,7 @@ impl Intake {
             reject_time: None,
             jam_time: None,
             overcurrent_time: None,
+            current_ring: None,
         };
     }
 }
