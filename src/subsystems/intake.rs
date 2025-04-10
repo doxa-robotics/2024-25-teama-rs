@@ -157,6 +157,8 @@ impl Intake {
                         } else {
                             *jam_time = Some(Instant::now());
                         }
+                    } else {
+                        *jam_time = None;
                     }
                 } else {
                     log::warn!("failed to get motor current");
