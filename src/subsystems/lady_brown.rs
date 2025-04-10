@@ -25,8 +25,8 @@ impl Default for LadyBrownState {
 
 impl LadyBrownState {
     pub const INITIAL_ARM_ANGLE: f64 = 10.0;
-    pub const INTAKE_ANGLE: f64 = Self::INITIAL_ARM_ANGLE + 23.5;
-    pub const MAX_EXPANSION_ANGLE: f64 = Self::INITIAL_ARM_ANGLE + 152.0;
+    pub const INTAKE_ANGLE: f64 = Self::INITIAL_ARM_ANGLE + 23.0;
+    pub const MAX_EXPANSION_ANGLE: f64 = Self::INITIAL_ARM_ANGLE + 148.0;
 
     pub fn angle(&self) -> f64 {
         match self {
