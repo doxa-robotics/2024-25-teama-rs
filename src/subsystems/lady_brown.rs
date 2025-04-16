@@ -4,7 +4,7 @@ use core::f64;
 use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    prelude::{sleep, spawn, Motor, Position},
+    prelude::{sleep, spawn, AdiDigitalIn, Motor, Position},
     sync::Mutex,
 };
 use vexide_motorgroup::{MotorGroup, MotorGroupError};
@@ -25,8 +25,8 @@ impl Default for LadyBrownState {
 
 impl LadyBrownState {
     pub const INITIAL_ARM_ANGLE: f64 = 10.0;
-    pub const INTAKE_ANGLE: f64 = Self::INITIAL_ARM_ANGLE + 23.0;
-    pub const MAX_EXPANSION_ANGLE: f64 = Self::INITIAL_ARM_ANGLE + 148.0;
+    pub const INTAKE_ANGLE: f64 = Self::INITIAL_ARM_ANGLE + 30.0;
+    pub const MAX_EXPANSION_ANGLE: f64 = Self::INITIAL_ARM_ANGLE + 147.0;
 
     pub fn angle(&self) -> f64 {
         match self {
@@ -46,6 +46,7 @@ impl LadyBrownState {
 #[derive(Debug)]
 struct LadyBrownInner {
     motors: MotorGroup,
+    limit: AdiDigitalIn,
     gear_ratio: f64,
     pid: pid::Pid<f64>,
     state: LadyBrownState,
@@ -54,10 +55,27 @@ struct LadyBrownInner {
 impl LadyBrownInner {
     async fn update(&mut self) -> Result<(), LadyBrownError> {
         self.pid.setpoint = self.state.angle();
-        let current_angle: f64 =
-            self.motors.position().context(MotorSnafu)?.as_degrees() / self.gear_ratio;
+        let current_angle: f64 = self
+            .motors
+            .position()
+            .map_err(|_| LadyBrownError::MotorGet)?
+            .as_degrees()
+            / self.gear_ratio;
         let output = self.pid.next_control_output(current_angle);
         self.motors.set_voltage(output.output).context(MotorSnafu)?;
+        if matches!(self.state, LadyBrownState::Initial)
+            && current_angle <= LadyBrownState::INITIAL_ARM_ANGLE + 5.0
+        {
+            if self.limit.is_high().unwrap_or(true) {
+                self.motors
+                    .set_position(Position::from_degrees(
+                        LadyBrownState::INITIAL_ARM_ANGLE * self.gear_ratio,
+                    ))
+                    .context(MotorSnafu)?;
+            } else {
+                self.motors.set_voltage(-4.0).context(MotorSnafu)?;
+            }
+        }
         Ok(())
     }
 }
@@ -69,10 +87,16 @@ pub struct LadyBrown(Arc<Mutex<LadyBrownInner>>);
 pub enum LadyBrownError {
     #[snafu(display("motor error: {}", source))]
     Motor { source: MotorGroupError },
+    #[snafu(display("motor error get"))]
+    MotorGet,
 }
 
 impl LadyBrown {
-    pub fn new(mut motors: MotorGroup, gear_ratio: f64) -> Result<Self, LadyBrownError> {
+    pub fn new(
+        mut motors: MotorGroup,
+        gear_ratio: f64,
+        limit: AdiDigitalIn,
+    ) -> Result<Self, LadyBrownError> {
         motors
             .set_position(Position::from_degrees(
                 LadyBrownState::Initial.angle() * gear_ratio,
@@ -87,6 +111,7 @@ impl LadyBrown {
         Ok(Self(Arc::new(Mutex::new(LadyBrownInner {
             motors,
             pid,
+            limit,
             gear_ratio,
             state: LadyBrownState::default(),
         }))))

@@ -101,6 +101,7 @@ dependencies = [
  "nalgebra",
  "pid",
  "snafu",
+ "vex-sdk",
  "vexide",
  "vexide-motorgroup",
  "zune-bmp",
@@ -546,9 +547,9 @@ dependencies = [
 
 [[package]]
 name = "vexide-motorgroup"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69bae81ee474fb41e4182386bcefde7af12cba263becfe16ea833bf1519f2108"
+checksum = "483b67e6aa671b9494fed6b6fafd031c88250fffd1278774bbd24d449c08d1f4"
 dependencies = [
  "vexide",
 ]

@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 use core::{ops::Not, time::Duration};
 
-use colorsys::{Hsl, Rgb};
+use colorsys::{ColorAlpha, Hsl, Rgb};
 use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
@@ -22,7 +22,7 @@ const RED_SIGNATURE: u8 = 1;
 const BLUE_SIGNATURE: u8 = 2;
 const JAM_CURRENT: f64 = 2.6;
 const JAM_OVERCURRENT_TIME: Duration = Duration::from_millis(1000);
-const JAM_REVERSE_TIME: Duration = Duration::from_millis(200);
+const JAM_REVERSE_TIME: Duration = Duration::from_millis(500);
 const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(000);
 const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(600);
 
@@ -91,12 +91,15 @@ impl Intake {
             .set_mode(VisionMode::ColorDetection)
             .expect("failed to set vision mode");
         vision
+            .set_brightness(0.6)
+            .expect("failed to set vision brightness");
+        vision
             .set_signature(
                 RED_SIGNATURE,
                 VisionSignature {
-                    range: 5.0,
-                    u_threshold: (10581, 11817, 11199),
-                    v_threshold: (-1377, -1001, -1189),
+                    range: 2.5,
+                    u_threshold: (2707, 5415, 4061),
+                    v_threshold: (-2697, -1817, -2257),
                     flags: 0,
                 },
             )
@@ -105,9 +108,9 @@ impl Intake {
             .set_signature(
                 BLUE_SIGNATURE,
                 VisionSignature {
-                    range: 8.0,
-                    u_threshold: (-5097, -3559, -2828),
-                    v_threshold: (5605, 7797, 6701),
+                    range: 2.5,
+                    u_threshold: (-5369, -4689, -5029),
+                    v_threshold: (397, 1865, 1131),
                     flags: 0,
                 },
             )
@@ -132,11 +135,15 @@ impl Intake {
                             (start.elapsed().as_millis() as f64 / 20.0).rem_euclid(360.0),
                             100.0,
                             50.0,
-                            None,
+                            Some(
+                                ((start.elapsed().as_millis() as f64 / 200.0).sin() + 1.0) / 2.0
+                                    * 0.8
+                                    + 0.2,
+                            ),
                         ));
                         _ = vision.set_led_mode(vexide::prelude::LedMode::Manual(
                             (color.red() as u8, color.green() as u8, color.blue() as u8).into(),
-                            1.0,
+                            color.alpha(),
                         ));
 
                         sleep(super::SUBSYSTEM_UPDATE_PERIOD).await;
@@ -168,10 +175,10 @@ impl Intake {
                                 *jam_time = Some(Instant::now());
                             }
                         } else {
-                            *jam_time = Some(Instant::now());
+                            *overcurrent_time = Some(Instant::now());
                         }
                     } else {
-                        *jam_time = None;
+                        *overcurrent_time = None;
                     }
                 } else {
                     log::warn!("failed to get motor current");
@@ -195,23 +202,6 @@ impl Intake {
                     motor.set_voltage(motor.max_voltage()).context(MotorSnafu)?;
                 }
                 if let Some(accept_color) = accept {
-                    match vision.objects() {
-                        Ok(objects) => {
-                            for object in objects {
-                                if let DetectionSource::Signature(sig) = object.source {
-                                    match sig {
-                                        RED_SIGNATURE => *current_ring = Some(RingColor::Red),
-                                        BLUE_SIGNATURE => *current_ring = Some(RingColor::Blue),
-                                        _ => {}
-                                    }
-                                    log::debug!("ring: {:?}", current_ring);
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            log::warn!("vision error: {}", err);
-                        }
-                    }
                     if reject_time.is_none()
                         && let Ok(Some(object)) = distance.object()
                         && object.distance < 50
@@ -257,7 +247,7 @@ impl Intake {
         let mut state = self.state.lock().await;
         *state = match direction {
             Direction::Forward => IntakeState::Forward {
-                accept: Some(RingColor::Blue),
+                accept: None,
                 reject_time: None,
                 jam_time: None,
                 overcurrent_time: None,

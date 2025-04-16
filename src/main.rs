@@ -17,8 +17,12 @@ use alloc::{
 };
 use core::{cell::RefCell, time::Duration};
 
-use libdoxa::{subsystems::tracking::wheel::TrackingWheel, utils::vec2::Vec2};
+use libdoxa::{
+    subsystems::{drivetrain::actions, tracking::wheel::TrackingWheel},
+    utils::{settling::Tolerances, vec2::Vec2},
+};
 use log::{error, info};
+use pid::Pid;
 use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp, Doinker, IntakeRaiser};
 use utils::logger;
 use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
@@ -48,7 +52,24 @@ impl Compete for Robot {
         }
     }
 
-    async fn autonomous(&mut self) {}
+    async fn autonomous(&mut self) {
+        // self.drivetrain
+        //     .action(
+        //         libdoxa::subsystems::drivetrain::actions::ForwardAction::new(
+        //             {
+        //                 let mut controller = Pid::new(100.0, Motor::V5_MAX_VOLTAGE);
+        //                 controller.p(0.1, Motor::V5_MAX_VOLTAGE);
+        //                 controller
+        //             },
+        //             Tolerances::new()
+        //                 .error_tolerance(5.0)
+        //                 .velocity_tolerance(5.0)
+        //                 .tolerance_duration(Duration::from_millis(200))
+        //                 .timeout(Duration::from_millis(1000)),
+        //         ),
+        //     )
+        //     .await;
+    }
 }
 
 #[vexide::main(banner(theme = THEME_OFFICIAL_LOGO))]
@@ -105,7 +126,7 @@ async fn main(peripherals: Peripherals) {
                     libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
                     right_motors,
                 )
-            ], inertial.clone(), Vec2::default()),
+            ], inertial.clone(), Vec2::default(),0.0),
         ),
 
         intake: Intake::new(
@@ -120,6 +141,7 @@ async fn main(peripherals: Peripherals) {
                 Motor::new_exp(peripherals.port_2, Direction::Reverse),
             ]),
             3.0,
+            AdiDigitalIn::new(peripherals.adi_f),
         )
         .expect("failed to initialize arm"),
     };
