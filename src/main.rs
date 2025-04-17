@@ -9,20 +9,11 @@ mod opcontrol;
 mod subsystems;
 mod utils;
 
-use alloc::{
-    rc::Rc,
-    string::{String, ToString},
-    vec,
-    vec::Vec,
-};
+use alloc::{rc::Rc, vec};
 use core::{cell::RefCell, time::Duration};
 
-use libdoxa::{
-    subsystems::{drivetrain::actions, tracking::wheel::TrackingWheel},
-    utils::{settling::Tolerances, vec2::Vec2},
-};
+use libdoxa::{subsystems::tracking::wheel::TrackingWheel, utils::pose::Pose};
 use log::{error, info};
-use pid::Pid;
 use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp, Doinker, IntakeRaiser};
 use utils::logger;
 use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
@@ -31,7 +22,6 @@ use vexide_motorgroup::MotorGroup;
 struct Robot {
     controller: Controller,
 
-    inertial: Rc<RefCell<InertialSensor>>,
     drivetrain: libdoxa::subsystems::drivetrain::Drivetrain,
 
     intake: Intake,
@@ -90,43 +80,46 @@ async fn main(peripherals: Peripherals) {
 
     let robot = Robot {
         controller: peripherals.primary_controller,
-        inertial: inertial.clone(),
+
         intake_raiser: IntakeRaiser::new([AdiDigitalOut::new(peripherals.adi_c)]),
+
         doinker: Doinker::new(
-            [
-                AdiDigitalOut::new(peripherals.adi_d),
-            ],
-            [
-                AdiDigitalOut::new(peripherals.adi_e),
-            ],
+            [AdiDigitalOut::new(peripherals.adi_d)],
+            [AdiDigitalOut::new(peripherals.adi_e)],
             libdoxa::subsystems::pneumatic::MirroredState::Normal,
         ),
+
         drivetrain: libdoxa::subsystems::drivetrain::Drivetrain::new(
             left_motors.clone(),
             right_motors.clone(),
-            inertial.clone(),
             65.0,
-            libdoxa::subsystems::tracking::TrackingSubsystem::new([
-                TrackingWheel::new(
-                    158.0,
-                    122.0,
-                    libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Perpendicular,
-                    RotationSensor::new(peripherals.port_17, Direction::Forward),
-                )
-            ], [
-                TrackingWheel::new(
-                    165.0,
-                    0.0,
-                    libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
-                    left_motors,
-                ),
-                TrackingWheel::new(
-                    165.0,
-                    0.0,
-                    libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
-                    right_motors,
-                )
-            ], inertial.clone(), Vec2::default(),0.0),
+            Motor::V5_MAX_VOLTAGE,
+            libdoxa::subsystems::tracking::TrackingSubsystem::new(
+                [
+                    TrackingWheel::new(
+                        158.0,
+                        122.0,
+                        libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Perpendicular,
+                        RotationSensor::new(peripherals.port_17, Direction::Forward),
+                    ),
+                ],
+                [
+                    TrackingWheel::new(
+                        165.0,
+                        0.0,
+                        libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
+                        left_motors,
+                    ),
+                    TrackingWheel::new(
+                        165.0,
+                        0.0,
+                        libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
+                        right_motors,
+                    ),
+                ],
+                inertial.clone(),
+                Pose::default(),
+            ),
         ),
 
         intake: Intake::new(
@@ -134,7 +127,9 @@ async fn main(peripherals: Peripherals) {
             VisionSensor::new(peripherals.port_11),
             DistanceSensor::new(peripherals.port_12),
         ),
+
         clamp: Clamp::new([AdiDigitalOut::new(peripherals.adi_b)]),
+
         lady_brown: LadyBrown::new(
             MotorGroup::new(vec![
                 Motor::new_exp(peripherals.port_1, Direction::Forward),

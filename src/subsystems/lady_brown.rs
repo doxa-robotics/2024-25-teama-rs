@@ -117,16 +117,6 @@ impl LadyBrown {
         }))))
     }
 
-    pub async fn reset_rotation(&self) -> Result<(), LadyBrownError> {
-        let mut inner = self.0.lock().await;
-        let new_position = Position::from_degrees(inner.state.angle() * inner.gear_ratio);
-        inner
-            .motors
-            .set_position(new_position)
-            .context(MotorSnafu)?;
-        Ok(())
-    }
-
     pub fn task(&self) {
         let inner = self.0.clone();
         spawn(async move {

@@ -71,12 +71,6 @@ pub enum IntakeState {
 pub enum IntakeError {
     #[snafu(display("motor error: {}", source))]
     Motor { source: MotorError },
-    #[snafu(display("port error: {}", source))]
-    PortError { source: PortError },
-    #[snafu(display("vision error: {}", source))]
-    Vision {
-        source: vexide::devices::smart::vision::VisionError,
-    },
 }
 
 #[derive(Debug, Clone)]
@@ -91,26 +85,26 @@ impl Intake {
             .set_mode(VisionMode::ColorDetection)
             .expect("failed to set vision mode");
         vision
-            .set_brightness(0.6)
+            .set_brightness(0.5)
             .expect("failed to set vision brightness");
         vision
             .set_signature(
-                RED_SIGNATURE,
+                RingColor::Red.signature(),
                 VisionSignature {
                     range: 2.5,
-                    u_threshold: (2707, 5415, 4061),
-                    v_threshold: (-2697, -1817, -2257),
+                    u_threshold: (10027, 10981, 10504),
+                    v_threshold: (-1707, -1307, -1507),
                     flags: 0,
                 },
             )
             .expect("failed to initialize vision red signature");
         vision
             .set_signature(
-                BLUE_SIGNATURE,
+                RingColor::Blue.signature(),
                 VisionSignature {
                     range: 2.5,
-                    u_threshold: (-5369, -4689, -5029),
-                    v_threshold: (397, 1865, 1131),
+                    u_threshold: (-4539, -3981, -4260),
+                    v_threshold: (6895, 8859, 7877),
                     flags: 0,
                 },
             )
@@ -201,6 +195,23 @@ impl Intake {
                 } else {
                     motor.set_voltage(motor.max_voltage()).context(MotorSnafu)?;
                 }
+                if let Ok(objects) = vision.objects() {
+                    for object in objects {
+                        if let DetectionSource::Signature(id) = object.source {
+                            match id {
+                                RED_SIGNATURE => {
+                                    *current_ring = Some(RingColor::Red);
+                                }
+                                BLUE_SIGNATURE => {
+                                    *current_ring = Some(RingColor::Blue);
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                } else {
+                    log::warn!("failed to get vision detections");
+                }
                 if let Some(accept_color) = accept {
                     if reject_time.is_none()
                         && let Ok(Some(object)) = distance.object()
@@ -210,11 +221,6 @@ impl Intake {
                     {
                         log::debug!("intake rejected ring: {:?}", current_ring);
                         *reject_time = Some(Instant::now());
-
-                        /*if sig == (!*accept_color).signature() {
-                            log::debug!("intake rejected ring: {:?}", object.source);
-                            *reject_time = Some(Instant::now());
-                        }*/
                     }
                 }
             }
