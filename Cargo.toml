@@ -24,6 +24,8 @@ vexide = "0.7.0"
 vexide-motorgroup = "2.0.0"
 libdoxa = { path = "../libdoxa" }
 colorsys = { version = "0.6.7", default-features = false }
+autons = "0.1.0"
+autons-controller = { git = "https://github.com/doxa-robotics/autons-controller.git", branch = "main" }
 
 [profile.release]
 strip = true
@@ -33,3 +35,4 @@ lto = true
 [features]
 default = []
 simplified_controls = [] # simplified controls for interactive fundraising demos
+no_selector = []         # immediately start the auton for debugging

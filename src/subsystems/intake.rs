@@ -5,10 +5,7 @@ use colorsys::{ColorAlpha, Hsl, Rgb};
 use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
-    devices::{
-        smart::{motor::MotorError, vision::DetectionSource},
-        PortError,
-    },
+    devices::smart::{motor::MotorError, vision::DetectionSource},
     float::Float as _,
     prelude::{
         sleep, spawn, BrakeMode, Direction, DistanceSensor, Motor, VisionMode, VisionSensor,
