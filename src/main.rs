@@ -153,33 +153,37 @@ async fn main(peripherals: Peripherals) {
         autons::test::red(&mut robot).await;
         log::debug!("run");
     }
-    robot
-        .compete(ControllerSelect::new(
-            controller.clone(),
-            [
-                route!(AutonCategory::Test, "Test red", autons::test::red),
-                route!(AutonCategory::Test, "Test blue", autons::test::blue),
-                route!(
-                    AutonCategory::RedNegative,
-                    "Negative rush",
-                    autons::negative_rush::red
-                ),
-                route!(
-                    AutonCategory::BlueNegative,
-                    "Negative rush",
-                    autons::negative_rush::blue
-                ),
-                route!(
-                    AutonCategory::RedPositive,
-                    "Positive rush",
-                    autons::positive_rush::red
-                ),
-                route!(
-                    AutonCategory::RedPositive,
-                    "Positive rush",
-                    autons::positive_rush::blue
-                ),
-            ],
-        ))
-        .await;
+    if vexide::competition::is_connected() {
+        robot
+            .compete(ControllerSelect::new(
+                controller.clone(),
+                [
+                    route!(AutonCategory::Test, "Test red", autons::test::red),
+                    route!(AutonCategory::Test, "Test blue", autons::test::blue),
+                    route!(
+                        AutonCategory::RedNegative,
+                        "Negative rush",
+                        autons::negative_rush::red
+                    ),
+                    route!(
+                        AutonCategory::BlueNegative,
+                        "Negative rush",
+                        autons::negative_rush::blue
+                    ),
+                    route!(
+                        AutonCategory::RedPositive,
+                        "Positive rush",
+                        autons::positive_rush::red
+                    ),
+                    route!(
+                        AutonCategory::RedPositive,
+                        "Positive rush",
+                        autons::positive_rush::blue
+                    ),
+                ],
+            ))
+            .await;
+    } else {
+        robot.driver().await;
+    }
 }
