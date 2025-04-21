@@ -22,7 +22,7 @@
 
   "onCreateCommand": "rustup install nightly-2025-02-18 && rustup component add --toolchain nightly-2025-02-18 rustfmt clippy rust-src llvm-tools",
   "postStartCommand": "git -C /workspaces/libdoxa pull --rebase || git clone https://github.com/doxa-robotics/libdoxa.git /workspaces/libdoxa",
-  "updateContentCommand": "cd /workspaces/libdoxa && (cargo check & cargo clippy & wait)",
+  "updateContentCommand": "cd /workspaces/2024-25-teama-rs && (cargo check & cargo clippy & wait)",
 
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},
