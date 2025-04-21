@@ -75,13 +75,13 @@ async fn main(peripherals: Peripherals) {
             )],
             [
                 TrackingWheel::new(
-                    165.0,
+                    165.0 * 2.0,
                     0.0,
                     libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
                     left_motors.clone(),
                 ),
                 TrackingWheel::new(
-                    165.0,
+                    165.0 * 2.0,
                     0.0,
                     libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
                     right_motors.clone(),
@@ -92,7 +92,7 @@ async fn main(peripherals: Peripherals) {
         ),
     ));
 
-    let robot = Robot {
+    let mut robot = Robot {
         controller: Arc::new(Mutex::new(peripherals.primary_controller)),
 
         intake_raiser: IntakeRaiser::new([AdiDigitalOut::new(peripherals.adi_c)]),
@@ -140,19 +140,44 @@ async fn main(peripherals: Peripherals) {
 
     info!("entering competing");
     let controller = robot.controller.clone();
+
+    vexide::task::spawn(async move {
+        log::debug!("run");
+    })
+    .detach();
+    sleep(Duration::from_millis(100)).await;
+
+    #[cfg(feature = "no_selector")]
+    {
+        log::info!("No selector feature enabled, running autonomously");
+        autons::test::red(&mut robot).await;
+        log::debug!("run");
+    }
     robot
         .compete(ControllerSelect::new(
             controller.clone(),
             [
+                route!(AutonCategory::Test, "Test red", autons::test::red),
+                route!(AutonCategory::Test, "Test blue", autons::test::blue),
                 route!(
-                    AutonCategory::Test,
-                    "Test red",
-                    autons::test::test_auton_red
+                    AutonCategory::RedNegative,
+                    "Negative rush",
+                    autons::negative_rush::red
                 ),
                 route!(
-                    AutonCategory::Test,
-                    "Test blue",
-                    autons::test::test_auton_blue
+                    AutonCategory::BlueNegative,
+                    "Negative rush",
+                    autons::negative_rush::blue
+                ),
+                route!(
+                    AutonCategory::RedPositive,
+                    "Positive rush",
+                    autons::positive_rush::red
+                ),
+                route!(
+                    AutonCategory::RedPositive,
+                    "Positive rush",
+                    autons::positive_rush::blue
                 ),
             ],
         ))

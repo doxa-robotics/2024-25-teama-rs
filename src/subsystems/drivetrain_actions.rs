@@ -8,7 +8,7 @@ use libdoxa::{
 const TILES_TO_MM: f64 = 600.0;
 
 pub const CONFIG: ActionConfig = ActionConfig {
-    linear_kp: 0.0,
+    linear_kp: 0.1,
     linear_ki: 0.0,
     linear_kd: 0.0,
     turn_kp: 0.0,
@@ -18,14 +18,14 @@ pub const CONFIG: ActionConfig = ActionConfig {
     pursuit_turn_ki: 0.0,
     pursuit_turn_kd: 0.0,
     pursuit_lookahead: 0.0,
-    linear_error_tolerance: 0.0,
-    linear_velocity_tolerance: 0.0,
-    linear_tolerance_duration: Duration::from_millis(0),
-    linear_timeout: Duration::from_millis(0),
-    turn_error_tolerance: 0.0,
-    turn_velocity_tolerance: 0.0,
-    turn_tolerance_duration: Duration::from_millis(0),
-    turn_timeout: Duration::from_millis(0),
+    linear_error_tolerance: 10.0,
+    linear_velocity_tolerance: 2.0,
+    linear_tolerance_duration: Duration::from_millis(100),
+    linear_timeout: Duration::from_millis(3000),
+    turn_error_tolerance: 0.3,
+    turn_velocity_tolerance: 2.0,
+    turn_tolerance_duration: Duration::from_millis(100),
+    turn_timeout: Duration::from_millis(2000),
 };
 
 pub fn forward(
