@@ -11,7 +11,10 @@ pub async fn red(robot: &mut Robot) {
         .await;
     robot
         .drivetrain
-        .action(drivetrain_actions::turn_to_point((0.0, 0.0).into(), CONFIG))
+        .action(drivetrain_actions::drive_to_point(
+            (0.0, 0.0).into(),
+            CONFIG,
+        ))
         .await;
 }
 

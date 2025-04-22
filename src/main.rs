@@ -23,6 +23,8 @@ use utils::logger;
 use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO, sync::Mutex};
 use vexide_motorgroup::MotorGroup;
 
+const DRIVETRAIN_CIRCUMFERENCE: f64 = 165.0;
+
 struct Robot {
     controller: Arc<Mutex<Controller>>,
 
@@ -48,6 +50,16 @@ impl SelectCompete for Robot {
             sleep(Duration::from_millis(500)).await;
         }
     }
+
+    async fn before_route(&mut self) {
+        // self.drivetrain.set_max_voltage(Motor::V5_MAX_VOLTAGE * 0.6);
+        info!("Auton start");
+    }
+
+    async fn after_route(&mut self) {
+        // self.drivetrain.set_max_voltage(Motor::V5_MAX_VOLTAGE);
+        info!("Auton end");
+    }
 }
 
 #[vexide::main(banner(theme = THEME_OFFICIAL_LOGO))]
@@ -64,24 +76,24 @@ async fn main(peripherals: Peripherals) {
         Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
         Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
     ])));
-    let inertial = Rc::new(RefCell::new(InertialSensor::new(peripherals.port_20)));
+    let inertial = Rc::new(RefCell::new(InertialSensor::new(peripherals.port_18)));
     let tracking = Rc::new(RefCell::new(
         libdoxa::subsystems::tracking::TrackingSubsystem::new(
             [TrackingWheel::new(
                 158.0,
-                122.0,
+                42.0,
                 libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Perpendicular,
-                RotationSensor::new(peripherals.port_17, Direction::Forward),
+                RotationSensor::new(peripherals.port_19, Direction::Forward),
             )],
             [
                 TrackingWheel::new(
-                    165.0 * 2.0,
+                    DRIVETRAIN_CIRCUMFERENCE,
                     0.0,
                     libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
                     left_motors.clone(),
                 ),
                 TrackingWheel::new(
-                    165.0 * 2.0,
+                    DRIVETRAIN_CIRCUMFERENCE,
                     0.0,
                     libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Parallel,
                     right_motors.clone(),
@@ -106,7 +118,7 @@ async fn main(peripherals: Peripherals) {
         drivetrain: libdoxa::subsystems::drivetrain::Drivetrain::new(
             left_motors.clone(),
             right_motors.clone(),
-            65.0,
+            DRIVETRAIN_CIRCUMFERENCE,
             Motor::V5_MAX_VOLTAGE,
             tracking.clone(),
         ),
@@ -141,15 +153,14 @@ async fn main(peripherals: Peripherals) {
     info!("entering competing");
     let controller = robot.controller.clone();
 
-    vexide::task::spawn(async move {
-        log::debug!("run");
-    })
-    .detach();
     sleep(Duration::from_millis(100)).await;
 
     #[cfg(feature = "no_selector")]
     {
-        log::info!("No selector feature enabled, running autonomously");
+        log::info!("No selector feature enabled, running autonomously after inertial calibration");
+        while inertial.borrow().is_calibrating().unwrap() {
+            vexide::time::sleep(Duration::from_millis(100)).await;
+        }
         autons::test::red(&mut robot).await;
         log::debug!("run");
     }
