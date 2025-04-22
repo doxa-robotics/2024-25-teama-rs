@@ -35,4 +35,6 @@ lto = true
 [features]
 default = []
 simplified_controls = [] # simplified controls for interactive fundraising demos
-no_selector = []         # immediately start the auton for debugging
+no_selector = [
+    "libdoxa/unsafe_debug_render",
+] # immediately start the auton for debugging

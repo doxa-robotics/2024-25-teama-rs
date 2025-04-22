@@ -30,7 +30,7 @@ pub const CONFIG: ActionConfig = ActionConfig {
     pursuit_turn_kd: 50.0,
     pursuit_turn_kd_limit: f64::MAX,
     pursuit_turn_limit: Motor::V5_MAX_VOLTAGE,
-    pursuit_lookahead: 0.0,
+    pursuit_lookahead: 200.0,
     linear_error_tolerance: 5.0,
     linear_velocity_tolerance: 5.0,
     linear_tolerance_duration: Duration::from_millis(100),
