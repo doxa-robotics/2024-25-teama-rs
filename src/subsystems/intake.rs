@@ -260,17 +260,17 @@ impl Intake {
         Ok(())
     }
 
-    pub async fn stop(&self) {
+    pub fn stop(&self) {
         let mut state = self.state.borrow_mut();
         *state = IntakeState::Stop;
     }
 
-    pub async fn stop_hold(&self) {
+    pub fn stop_hold(&self) {
         let mut state = self.state.borrow_mut();
         *state = IntakeState::StopHold;
     }
 
-    pub async fn run(&self, direction: Direction) {
+    pub fn run(&self, direction: Direction) {
         let mut state = self.state.borrow_mut();
         *state = match direction {
             Direction::Forward => IntakeState::Forward {
@@ -284,12 +284,12 @@ impl Intake {
         };
     }
 
-    pub async fn partial_intake(&self) {
+    pub fn partial_intake(&self) {
         let mut state = self.state.borrow_mut();
         *state = IntakeState::PartialIntake;
     }
 
-    pub async fn run_forward_accept(&self, color: RingColor) {
+    pub fn run_forward_accept(&self, color: RingColor) {
         let mut state = self.state.borrow_mut();
         *state = IntakeState::Forward {
             accept: Some(color),

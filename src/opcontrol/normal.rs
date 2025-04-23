@@ -44,16 +44,16 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         });
 
         if state.button_r1.is_now_pressed() {
-            robot.intake.run(Direction::Forward).await;
+            robot.intake.run(Direction::Forward);
         }
         if state.button_l1.is_now_pressed() {
-            robot.intake.run(Direction::Reverse).await;
+            robot.intake.run(Direction::Reverse);
         }
         if state.button_r1.is_now_released() || state.button_l1.is_now_released() {
             if matches!(robot.lady_brown.state().await, LadyBrownState::Intake) {
-                robot.intake.stop_hold().await;
+                robot.intake.stop_hold();
             } else {
-                robot.intake.stop().await;
+                robot.intake.stop();
             }
         }
 
@@ -83,7 +83,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             match robot.lady_brown.state().await {
                 LadyBrownState::Initial => robot.lady_brown.set_state(LadyBrownState::Intake).await,
                 LadyBrownState::Intake => {
-                    robot.intake.stop().await;
+                    robot.intake.stop();
                     robot
                         .lady_brown
                         .set_state(LadyBrownState::MaxExpansion)
@@ -113,14 +113,14 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             let intake = robot.intake.clone();
             let lady_brown = robot.lady_brown.clone();
             spawn(async move {
-                intake.stop().await;
+                intake.stop();
                 lady_brown.set_state(LadyBrownState::MaxExpansion).await;
                 sleep(Duration::from_millis(800)).await;
                 lady_brown.set_state(LadyBrownState::Intake).await;
                 sleep(Duration::from_millis(300)).await;
-                intake.run(Direction::Forward).await;
+                intake.run(Direction::Forward);
                 sleep(Duration::from_millis(600)).await;
-                intake.stop().await;
+                intake.stop();
                 lady_brown.set_state(LadyBrownState::MaxExpansion).await;
             })
             .detach();

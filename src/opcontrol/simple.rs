@@ -24,7 +24,7 @@ fn curve_turn(input: f64) -> f64 {
 pub enum OpcontrolError {}
 
 pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
-    robot.intake.stop().await;
+    robot.intake.stop();
     loop {
         let state = robot
             .controller
@@ -44,13 +44,13 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         });
 
         if state.button_a.is_now_pressed() {
-            robot.intake.run(Direction::Forward).await;
+            robot.intake.run(Direction::Forward);
         }
         if state.button_a.is_now_released() {
             if matches!(robot.lady_brown.state().await, LadyBrownState::Intake) {
-                robot.intake.stop_hold().await;
+                robot.intake.stop_hold();
             } else {
-                robot.intake.stop().await;
+                robot.intake.stop();
             }
         }
 
@@ -78,7 +78,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             match robot.lady_brown.state().await {
                 LadyBrownState::Initial => robot.lady_brown.set_state(LadyBrownState::Intake).await,
                 LadyBrownState::Intake => {
-                    robot.intake.stop().await;
+                    robot.intake.stop();
                     robot
                         .lady_brown
                         .set_state(LadyBrownState::MaxExpansion)
