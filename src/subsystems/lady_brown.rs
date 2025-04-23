@@ -108,20 +108,17 @@ impl LadyBrown {
         pid.i(0.005, 0.3);
         pid.d(0.11, f64::MAX);
 
-        Ok(Self(Arc::new(Mutex::new(LadyBrownInner {
+        let inner = Arc::new(Mutex::new(LadyBrownInner {
             motors,
             pid,
             limit,
             gear_ratio,
             state: LadyBrownState::default(),
-        }))))
-    }
-
-    pub fn task(&self) {
-        let inner = self.0.clone();
+        }));
+        let inner_clone = inner.clone();
         spawn(async move {
             loop {
-                let mut inner = inner.lock().await;
+                let mut inner = inner_clone.lock().await;
                 if let Err(err) = inner.update().await {
                     error!("arm update error: {}", err);
                 }
@@ -131,6 +128,8 @@ impl LadyBrown {
             }
         })
         .detach();
+
+        Ok(Self(inner))
     }
 
     pub async fn manual_add(&mut self, angle_change: f64) {

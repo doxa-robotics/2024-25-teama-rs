@@ -147,9 +147,6 @@ async fn main(peripherals: Peripherals) {
     // info!("Drivetrain temp: {:?}", robot.drivetrain.temperature());
     info!("Arm temp: {:?}", robot.lady_brown.temperature());
 
-    info!("starting subsystem background tasks");
-    robot.lady_brown.task();
-
     info!("entering competing");
     let controller = robot.controller.clone();
 
