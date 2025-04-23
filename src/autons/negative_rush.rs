@@ -23,6 +23,7 @@ pub async fn red(robot: &mut Robot) {
             1.0,
             1.0,
             CONFIG,
+            false,
         ))
         .await;
     robot
@@ -37,6 +38,7 @@ pub async fn red(robot: &mut Robot) {
             1.0,
             1.0,
             CONFIG,
+            false,
         ))
         .await;
     robot
