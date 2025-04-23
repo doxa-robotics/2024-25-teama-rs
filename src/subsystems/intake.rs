@@ -19,9 +19,9 @@ const BLUE_SIGNATURE: u8 = 2;
 const JAM_CURRENT: f64 = 2.6;
 const JAM_OVERCURRENT_TIME: Duration = Duration::from_millis(1000);
 const JAM_REVERSE_TIME: Duration = Duration::from_millis(500);
-const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(000);
-const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(600);
-const LINE_TRACKER_THRESHOLD: f64 = 0.3;
+const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(100);
+const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(300);
+const LINE_TRACKER_THRESHOLD: f64 = 0.2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(unused)]
@@ -53,7 +53,6 @@ impl Not for RingColor {
 #[derive(Debug, Clone, Copy)]
 pub enum IntakeState {
     Forward {
-        accept: Option<RingColor>,
         current_ring: Option<RingColor>,
         reject_time: Option<Instant>,
         jam_time: Option<Instant>,
@@ -65,6 +64,12 @@ pub enum IntakeState {
     StopHold,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct IntakeInner {
+    accept: Option<RingColor>,
+    state: IntakeState,
+}
+
 #[derive(Debug, Snafu)]
 pub enum IntakeError {
     #[snafu(display("motor error: {}", source))]
@@ -73,7 +78,7 @@ pub enum IntakeError {
 
 #[derive(Debug, Clone)]
 pub struct Intake {
-    state: Rc<RefCell<IntakeState>>,
+    state: Rc<RefCell<IntakeInner>>,
     _task: Rc<vexide::task::Task<()>>,
 }
 
@@ -111,17 +116,30 @@ impl Intake {
                 },
             )
             .expect("failed to initialize vision blue signature");
-        let line_tracker_zero = line_tracker
+        let mut line_tracker_zero = line_tracker
             .reflectivity()
             .expect("couldn't zero the line tracker");
 
-        let state = Rc::new(RefCell::new(IntakeState::Stop));
+        let mut sleeper = Some(Instant::now());
+
+        let state = Rc::new(RefCell::new(IntakeInner {
+            accept: None,
+            state: IntakeState::Stop,
+        }));
         Self {
             state: state.clone(),
             _task: Rc::new(spawn({
                 async move {
                     let start = Instant::now();
                     loop {
+                        if let Some(time) = sleeper
+                            && time.elapsed() > Duration::from_millis(100)
+                        {
+                            line_tracker_zero = line_tracker
+                                .reflectivity()
+                                .expect("couldn't zero the line tracker");
+                            sleeper = None;
+                        }
                         {
                             let mut state = state.borrow_mut();
                             if let Err(err) = Intake::update(
@@ -162,11 +180,10 @@ impl Intake {
         vision: &mut VisionSensor,
         line_tracker: &mut AdiLineTracker,
         line_tracker_zero: f64,
-        state: &mut IntakeState,
+        state: &mut IntakeInner,
     ) -> Result<(), IntakeError> {
-        match state {
+        match &mut state.state {
             IntakeState::Forward {
-                accept,
                 ref mut reject_time,
                 ref mut jam_time,
                 ref mut overcurrent_time,
@@ -223,12 +240,12 @@ impl Intake {
                 } else {
                     log::warn!("failed to get vision detections");
                 }
-                if let Some(accept_color) = accept {
+                if let Some(accept_color) = state.accept {
                     if reject_time.is_none()
                         && line_tracker.reflectivity().unwrap_or(0.0)
                             > line_tracker_zero + LINE_TRACKER_THRESHOLD
                         && let Some(current_ring) = current_ring
-                        && *current_ring != *accept_color
+                        && *current_ring != accept_color
                     {
                         log::debug!("intake rejected ring: {:?}", current_ring);
                         *reject_time = Some(Instant::now());
@@ -241,7 +258,7 @@ impl Intake {
                 {
                     motor.set_voltage(motor.max_voltage()).context(MotorSnafu)?;
                 } else {
-                    *state = IntakeState::Stop;
+                    state.state = IntakeState::Stop;
                     motor.brake(BrakeMode::Brake).context(MotorSnafu)?;
                 }
             }
@@ -262,19 +279,18 @@ impl Intake {
 
     pub fn stop(&self) {
         let mut state = self.state.borrow_mut();
-        *state = IntakeState::Stop;
+        state.state = IntakeState::Stop;
     }
 
     pub fn stop_hold(&self) {
         let mut state = self.state.borrow_mut();
-        *state = IntakeState::StopHold;
+        state.state = IntakeState::StopHold;
     }
 
     pub fn run(&self, direction: Direction) {
         let mut state = self.state.borrow_mut();
-        *state = match direction {
+        state.state = match direction {
             Direction::Forward => IntakeState::Forward {
-                accept: None,
                 reject_time: None,
                 jam_time: None,
                 overcurrent_time: None,
@@ -286,17 +302,25 @@ impl Intake {
 
     pub fn partial_intake(&self) {
         let mut state = self.state.borrow_mut();
-        *state = IntakeState::PartialIntake;
+        state.state = IntakeState::PartialIntake;
     }
 
     pub fn run_forward_accept(&self, color: RingColor) {
         let mut state = self.state.borrow_mut();
-        *state = IntakeState::Forward {
-            accept: Some(color),
+        state.state = IntakeState::Forward {
             reject_time: None,
             jam_time: None,
             overcurrent_time: None,
             current_ring: None,
         };
+    }
+
+    pub fn set_accept(&self, color: Option<RingColor>) {
+        let mut state = self.state.borrow_mut();
+        state.accept = color;
+    }
+
+    pub fn accept(&self) -> Option<RingColor> {
+        self.state.borrow().accept
     }
 }

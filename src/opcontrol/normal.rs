@@ -24,7 +24,7 @@ fn curve_turn(input: f64) -> f64 {
 pub enum OpcontrolError {}
 
 pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
-    robot.intake.stop().await;
+    robot.intake.stop();
     loop {
         let state = robot
             .controller
