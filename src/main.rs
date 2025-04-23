@@ -83,7 +83,7 @@ async fn main(peripherals: Peripherals) {
                 158.0,
                 42.0,
                 libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Perpendicular,
-                RotationSensor::new(peripherals.port_19, Direction::Forward),
+                RotationSensor::new(peripherals.port_20, Direction::Forward), // TODO: verify this is the right port (was 19)
             )],
             [
                 TrackingWheel::new(
@@ -127,7 +127,7 @@ async fn main(peripherals: Peripherals) {
         intake: Intake::new(
             Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
             VisionSensor::new(peripherals.port_11),
-            AdiLineTracker::new(peripherals.adi_g), // TODO: verify this is the right port
+            AdiLineTracker::new(peripherals.adi_g),
         ),
 
         clamp: Clamp::new([AdiDigitalOut::new(peripherals.adi_b)]),
