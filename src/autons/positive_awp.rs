@@ -19,13 +19,11 @@ async fn route(robot: &mut Robot) {
     // Alliance score
     robot
         .lady_brown
-        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion)
-        .await;
+        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
     sleep(Duration::from_millis(700)).await;
     robot
         .lady_brown
-        .set_state(crate::subsystems::lady_brown::LadyBrownState::Initial)
-        .await;
+        .set_state(crate::subsystems::lady_brown::LadyBrownState::Initial);
 
     // Corner
     let intake_clone = robot.intake.clone();
@@ -82,8 +80,7 @@ async fn route(robot: &mut Robot) {
     // Drive to bar touch
     robot
         .lady_brown
-        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion)
-        .await;
+        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
     robot
         .drivetrain
         .action(drivetrain_actions::boomerang_to_point(

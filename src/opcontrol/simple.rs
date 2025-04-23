@@ -47,7 +47,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             robot.intake.run(Direction::Forward);
         }
         if state.button_a.is_now_released() {
-            if matches!(robot.lady_brown.state().await, LadyBrownState::Intake) {
+            if matches!(robot.lady_brown.state(), LadyBrownState::Intake) {
                 robot.intake.stop_hold();
             } else {
                 robot.intake.stop();
@@ -75,52 +75,36 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         }
 
         if state.button_right.is_now_pressed() {
-            match robot.lady_brown.state().await {
-                LadyBrownState::Initial => robot.lady_brown.set_state(LadyBrownState::Intake).await,
+            match robot.lady_brown.state() {
+                LadyBrownState::Initial => robot.lady_brown.set_state(LadyBrownState::Intake),
                 LadyBrownState::Intake => {
                     robot.intake.stop();
-                    robot
-                        .lady_brown
-                        .set_state(LadyBrownState::MaxExpansion)
-                        .await;
+                    robot.lady_brown.set_state(LadyBrownState::MaxExpansion);
                 }
-                LadyBrownState::MaxExpansion => {
-                    robot.lady_brown.set_state(LadyBrownState::Initial).await
-                }
-                LadyBrownState::Manual(_) => {
-                    robot.lady_brown.set_state(LadyBrownState::Initial).await
-                }
+                LadyBrownState::MaxExpansion => robot.lady_brown.set_state(LadyBrownState::Initial),
+                LadyBrownState::Manual(_) => robot.lady_brown.set_state(LadyBrownState::Initial),
             }
         }
         if state.button_left.is_now_pressed() {
-            match robot.lady_brown.state().await {
-                LadyBrownState::Initial => {
-                    robot
-                        .lady_brown
-                        .set_state(LadyBrownState::MaxExpansion)
-                        .await
-                }
-                LadyBrownState::MaxExpansion => {
-                    robot.lady_brown.set_state(LadyBrownState::Intake).await
-                }
+            match robot.lady_brown.state() {
+                LadyBrownState::Initial => robot.lady_brown.set_state(LadyBrownState::MaxExpansion),
+                LadyBrownState::MaxExpansion => robot.lady_brown.set_state(LadyBrownState::Intake),
 
-                LadyBrownState::Intake => robot.lady_brown.set_state(LadyBrownState::Initial).await,
-                LadyBrownState::Manual(_) => {
-                    robot.lady_brown.set_state(LadyBrownState::Initial).await
-                }
+                LadyBrownState::Intake => robot.lady_brown.set_state(LadyBrownState::Initial),
+                LadyBrownState::Manual(_) => robot.lady_brown.set_state(LadyBrownState::Initial),
             }
         }
         if state.button_up.is_pressed() {
-            robot.lady_brown.manual_add(2.0).await;
+            robot.lady_brown.manual_add(2.0);
         }
         if state.button_down.is_pressed() {
-            robot.lady_brown.manual_add(-2.0).await;
+            robot.lady_brown.manual_add(-2.0);
         }
 
         if state.button_b.is_now_pressed() {
             robot.clamp.toggle();
         }
 
-        sleep(Duration::from_millis(10)).await;
+        sleep(Duration::from_millis(10));
     }
 }

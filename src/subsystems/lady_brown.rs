@@ -1,11 +1,11 @@
-use alloc::sync::Arc;
-use core::f64;
+use alloc::rc::Rc;
+use core::{cell::RefCell, f64};
 
 use log::error;
 use snafu::{ResultExt, Snafu};
 use vexide::{
     prelude::{sleep, spawn, AdiDigitalIn, Motor, Position},
-    sync::Mutex,
+    task::Task,
 };
 use vexide_motorgroup::{MotorGroup, MotorGroupError};
 
@@ -45,43 +45,15 @@ impl LadyBrownState {
 
 #[derive(Debug)]
 struct LadyBrownInner {
-    motors: MotorGroup,
-    limit: AdiDigitalIn,
     gear_ratio: f64,
-    pid: pid::Pid<f64>,
     state: LadyBrownState,
 }
 
-impl LadyBrownInner {
-    async fn update(&mut self) -> Result<(), LadyBrownError> {
-        self.pid.setpoint = self.state.angle();
-        let current_angle: f64 = self
-            .motors
-            .position()
-            .map_err(|_| LadyBrownError::MotorGet)?
-            .as_degrees()
-            / self.gear_ratio;
-        let output = self.pid.next_control_output(current_angle);
-        self.motors.set_voltage(output.output).context(MotorSnafu)?;
-        if matches!(self.state, LadyBrownState::Initial)
-            && current_angle <= LadyBrownState::INITIAL_ARM_ANGLE + 5.0
-        {
-            if self.limit.is_high().unwrap_or(true) {
-                self.motors
-                    .set_position(Position::from_degrees(
-                        LadyBrownState::INITIAL_ARM_ANGLE * self.gear_ratio,
-                    ))
-                    .context(MotorSnafu)?;
-            } else {
-                self.motors.set_voltage(-4.0).context(MotorSnafu)?;
-            }
-        }
-        Ok(())
-    }
-}
-
 #[derive(Debug, Clone)]
-pub struct LadyBrown(Arc<Mutex<LadyBrownInner>>);
+pub struct LadyBrown {
+    inner: Rc<RefCell<LadyBrownInner>>,
+    _task: Rc<Task<()>>,
+}
 
 #[derive(Debug, Snafu)]
 pub enum LadyBrownError {
@@ -108,47 +80,73 @@ impl LadyBrown {
         pid.i(0.005, 0.3);
         pid.d(0.11, f64::MAX);
 
-        let inner = Arc::new(Mutex::new(LadyBrownInner {
-            motors,
-            pid,
-            limit,
+        let inner = Rc::new(RefCell::new(LadyBrownInner {
             gear_ratio,
             state: LadyBrownState::default(),
         }));
         let inner_clone = inner.clone();
-        spawn(async move {
+        let task = spawn(async move {
             loop {
-                let mut inner = inner_clone.lock().await;
-                if let Err(err) = inner.update().await {
+                if let Err(err) = LadyBrown::update(
+                    &mut motors,
+                    &mut pid,
+                    &limit,
+                    gear_ratio,
+                    &mut inner_clone.borrow_mut().state,
+                ) {
                     error!("arm update error: {}", err);
                 }
-                drop(inner);
 
                 sleep(super::SUBSYSTEM_UPDATE_PERIOD).await;
             }
+        });
+
+        Ok(Self {
+            inner,
+            _task: Rc::new(task),
         })
-        .detach();
-
-        Ok(Self(inner))
     }
 
-    pub async fn manual_add(&mut self, angle_change: f64) {
-        let mut inner = self.0.lock().await;
-        inner.state.add(angle_change);
-    }
-
-    pub async fn state(&self) -> LadyBrownState {
-        self.0.lock().await.state
-    }
-
-    pub async fn set_state(&self, state: LadyBrownState) {
-        self.0.lock().await.state = state;
-    }
-
-    pub fn temperature(&self) -> f64 {
-        match self.0.try_lock() {
-            Some(inner) => inner.motors.temperature().unwrap_or(0.0),
-            None => 0.0,
+    fn update(
+        motors: &mut MotorGroup,
+        pid: &mut pid::Pid<f64>,
+        limit: &AdiDigitalIn,
+        gear_ratio: f64,
+        state: &mut LadyBrownState,
+    ) -> Result<(), LadyBrownError> {
+        pid.setpoint = state.angle();
+        let current_angle: f64 = motors
+            .position()
+            .map_err(|_| LadyBrownError::MotorGet)?
+            .as_degrees()
+            / gear_ratio;
+        let output = pid.next_control_output(current_angle);
+        motors.set_voltage(output.output).context(MotorSnafu)?;
+        if matches!(state, LadyBrownState::Initial)
+            && current_angle <= LadyBrownState::INITIAL_ARM_ANGLE + 5.0
+        {
+            if limit.is_high().unwrap_or(true) {
+                motors
+                    .set_position(Position::from_degrees(
+                        LadyBrownState::INITIAL_ARM_ANGLE * gear_ratio,
+                    ))
+                    .context(MotorSnafu)?;
+            } else {
+                motors.set_voltage(-4.0).context(MotorSnafu)?;
+            }
         }
+        Ok(())
+    }
+
+    pub fn manual_add(&mut self, angle_change: f64) {
+        self.inner.borrow_mut().state.add(angle_change);
+    }
+
+    pub fn state(&self) -> LadyBrownState {
+        self.inner.borrow().state
+    }
+
+    pub fn set_state(&self, state: LadyBrownState) {
+        self.inner.borrow_mut().state = state;
     }
 }

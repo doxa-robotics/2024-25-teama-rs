@@ -50,7 +50,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             robot.intake.run(Direction::Reverse);
         }
         if state.button_r1.is_now_released() || state.button_l1.is_now_released() {
-            if matches!(robot.lady_brown.state().await, LadyBrownState::Intake) {
+            if matches!(robot.lady_brown.state(), LadyBrownState::Intake) {
                 robot.intake.stop_hold();
             } else {
                 robot.intake.stop();
@@ -80,28 +80,21 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         }
 
         if state.button_l2.is_now_pressed() {
-            match robot.lady_brown.state().await {
-                LadyBrownState::Initial => robot.lady_brown.set_state(LadyBrownState::Intake).await,
+            match robot.lady_brown.state() {
+                LadyBrownState::Initial => robot.lady_brown.set_state(LadyBrownState::Intake),
                 LadyBrownState::Intake => {
                     robot.intake.stop();
-                    robot
-                        .lady_brown
-                        .set_state(LadyBrownState::MaxExpansion)
-                        .await;
+                    robot.lady_brown.set_state(LadyBrownState::MaxExpansion);
                 }
-                LadyBrownState::MaxExpansion => {
-                    robot.lady_brown.set_state(LadyBrownState::Initial).await
-                }
-                LadyBrownState::Manual(_) => {
-                    robot.lady_brown.set_state(LadyBrownState::Initial).await
-                }
+                LadyBrownState::MaxExpansion => robot.lady_brown.set_state(LadyBrownState::Initial),
+                LadyBrownState::Manual(_) => robot.lady_brown.set_state(LadyBrownState::Initial),
             }
         }
         if state.button_up.is_pressed() {
-            robot.lady_brown.manual_add(2.0).await;
+            robot.lady_brown.manual_add(2.0);
         }
         if state.button_down.is_pressed() {
-            robot.lady_brown.manual_add(-2.0).await;
+            robot.lady_brown.manual_add(-2.0);
         }
 
         if state.button_b.is_now_pressed() {
@@ -114,18 +107,18 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             let lady_brown = robot.lady_brown.clone();
             spawn(async move {
                 intake.stop();
-                lady_brown.set_state(LadyBrownState::MaxExpansion).await;
+                lady_brown.set_state(LadyBrownState::MaxExpansion);
                 sleep(Duration::from_millis(800)).await;
-                lady_brown.set_state(LadyBrownState::Intake).await;
+                lady_brown.set_state(LadyBrownState::Intake);
                 sleep(Duration::from_millis(300)).await;
                 intake.run(Direction::Forward);
                 sleep(Duration::from_millis(600)).await;
                 intake.stop();
-                lady_brown.set_state(LadyBrownState::MaxExpansion).await;
+                lady_brown.set_state(LadyBrownState::MaxExpansion);
             })
             .detach();
         }
 
-        sleep(Duration::from_millis(10)).await;
+        sleep(Duration::from_millis(10));
     }
 }

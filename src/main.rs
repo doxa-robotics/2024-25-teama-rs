@@ -143,10 +143,6 @@ async fn main(peripherals: Peripherals) {
         .expect("failed to initialize arm"),
     };
 
-    info!("-- Status --");
-    // info!("Drivetrain temp: {:?}", robot.drivetrain.temperature());
-    info!("Arm temp: {:?}", robot.lady_brown.temperature());
-
     info!("entering competing");
     let controller = robot.controller.clone();
 
