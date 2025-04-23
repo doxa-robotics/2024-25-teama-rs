@@ -1,5 +1,5 @@
-use alloc::sync::Arc;
-use core::{ops::Not, time::Duration};
+use alloc::rc::Rc;
+use core::{cell::RefCell, ops::Not, time::Duration};
 
 use colorsys::{ColorAlpha, Hsl, Rgb};
 use log::error;
@@ -11,7 +11,6 @@ use vexide::{
         sleep, spawn, AdiLineTracker, BrakeMode, Direction, Motor, VisionMode, VisionSensor,
         VisionSignature,
     },
-    sync::Mutex,
     time::Instant,
 };
 
@@ -74,8 +73,8 @@ pub enum IntakeError {
 
 #[derive(Debug, Clone)]
 pub struct Intake {
-    state: Arc<Mutex<IntakeState>>,
-    _task: Arc<vexide::task::Task<()>>,
+    state: Rc<RefCell<IntakeState>>,
+    _task: Rc<vexide::task::Task<()>>,
 }
 
 impl Intake {
@@ -116,26 +115,25 @@ impl Intake {
             .reflectivity()
             .expect("couldn't zero the line tracker");
 
-        let state = Arc::new(Mutex::new(IntakeState::Stop));
+        let state = Rc::new(RefCell::new(IntakeState::Stop));
         Self {
             state: state.clone(),
-            _task: Arc::new(spawn({
+            _task: Rc::new(spawn({
                 async move {
                     let start = Instant::now();
                     loop {
-                        let mut state = state.lock().await;
-                        if let Err(err) = Intake::update(
-                            &mut motor,
-                            &mut vision,
-                            &mut line_tracker,
-                            line_tracker_zero,
-                            &mut state,
-                        )
-                        .await
                         {
-                            error!("intake update error: {}", err);
+                            let mut state = state.borrow_mut();
+                            if let Err(err) = Intake::update(
+                                &mut motor,
+                                &mut vision,
+                                &mut line_tracker,
+                                line_tracker_zero,
+                                &mut state,
+                            ) {
+                                error!("intake update error: {}", err);
+                            }
                         }
-                        drop(state);
                         // Fade the LED!
                         let color = Rgb::from(Hsl::new(
                             (start.elapsed().as_millis() as f64 / 20.0).rem_euclid(360.0),
@@ -159,7 +157,7 @@ impl Intake {
         }
     }
 
-    async fn update(
+    fn update(
         motor: &mut Motor,
         vision: &mut VisionSensor,
         line_tracker: &mut AdiLineTracker,
@@ -243,6 +241,7 @@ impl Intake {
                 {
                     motor.set_voltage(motor.max_voltage()).context(MotorSnafu)?;
                 } else {
+                    *state = IntakeState::Stop;
                     motor.brake(BrakeMode::Brake).context(MotorSnafu)?;
                 }
             }
@@ -262,17 +261,17 @@ impl Intake {
     }
 
     pub async fn stop(&self) {
-        let mut state = self.state.lock().await;
+        let mut state = self.state.borrow_mut();
         *state = IntakeState::Stop;
     }
 
     pub async fn stop_hold(&self) {
-        let mut state = self.state.lock().await;
+        let mut state = self.state.borrow_mut();
         *state = IntakeState::StopHold;
     }
 
     pub async fn run(&self, direction: Direction) {
-        let mut state = self.state.lock().await;
+        let mut state = self.state.borrow_mut();
         *state = match direction {
             Direction::Forward => IntakeState::Forward {
                 accept: None,
@@ -286,12 +285,12 @@ impl Intake {
     }
 
     pub async fn partial_intake(&self) {
-        let mut state = self.state.lock().await;
+        let mut state = self.state.borrow_mut();
         *state = IntakeState::PartialIntake;
     }
 
     pub async fn run_forward_accept(&self, color: RingColor) {
-        let mut state = self.state.lock().await;
+        let mut state = self.state.borrow_mut();
         *state = IntakeState::Forward {
             accept: Some(color),
             reject_time: None,
