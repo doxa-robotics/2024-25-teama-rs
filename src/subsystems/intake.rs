@@ -8,7 +8,7 @@ use vexide::{
     devices::smart::{motor::MotorError, vision::DetectionSource},
     float::Float as _,
     prelude::{
-        sleep, spawn, BrakeMode, Direction, DistanceSensor, Motor, VisionMode, VisionSensor,
+        sleep, spawn, AdiLineTracker, BrakeMode, Direction, Motor, VisionMode, VisionSensor,
         VisionSignature,
     },
     sync::Mutex,
@@ -22,6 +22,7 @@ const JAM_OVERCURRENT_TIME: Duration = Duration::from_millis(1000);
 const JAM_REVERSE_TIME: Duration = Duration::from_millis(500);
 const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(000);
 const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(600);
+const LINE_TRACKER_THRESHOLD: f64 = 0.3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(unused)]
@@ -59,6 +60,7 @@ pub enum IntakeState {
         jam_time: Option<Instant>,
         overcurrent_time: Option<Instant>,
     },
+    PartialIntake,
     Reverse,
     Stop,
     StopHold,
@@ -77,7 +79,11 @@ pub struct Intake {
 }
 
 impl Intake {
-    pub fn new(mut motor: Motor, mut vision: VisionSensor, mut distance: DistanceSensor) -> Self {
+    pub fn new(
+        mut motor: Motor,
+        mut vision: VisionSensor,
+        mut line_tracker: AdiLineTracker,
+    ) -> Self {
         vision
             .set_mode(VisionMode::ColorDetection)
             .expect("failed to set vision mode");
@@ -106,6 +112,9 @@ impl Intake {
                 },
             )
             .expect("failed to initialize vision blue signature");
+        let line_tracker_zero = line_tracker
+            .reflectivity()
+            .expect("couldn't zero the line tracker");
 
         let state = Arc::new(Mutex::new(IntakeState::Stop));
         Self {
@@ -115,8 +124,14 @@ impl Intake {
                     let start = Instant::now();
                     loop {
                         let mut state = state.lock().await;
-                        if let Err(err) =
-                            Intake::update(&mut motor, &mut vision, &mut distance, &mut state).await
+                        if let Err(err) = Intake::update(
+                            &mut motor,
+                            &mut vision,
+                            &mut line_tracker,
+                            line_tracker_zero,
+                            &mut state,
+                        )
+                        .await
                         {
                             error!("intake update error: {}", err);
                         }
@@ -147,7 +162,8 @@ impl Intake {
     async fn update(
         motor: &mut Motor,
         vision: &mut VisionSensor,
-        distance: &mut DistanceSensor,
+        line_tracker: &mut AdiLineTracker,
+        line_tracker_zero: f64,
         state: &mut IntakeState,
     ) -> Result<(), IntakeError> {
         match state {
@@ -211,14 +227,23 @@ impl Intake {
                 }
                 if let Some(accept_color) = accept {
                     if reject_time.is_none()
-                        && let Ok(Some(object)) = distance.object()
-                        && object.distance < 50
+                        && line_tracker.reflectivity().unwrap_or(0.0)
+                            > line_tracker_zero + LINE_TRACKER_THRESHOLD
                         && let Some(current_ring) = current_ring
                         && *current_ring != *accept_color
                     {
                         log::debug!("intake rejected ring: {:?}", current_ring);
                         *reject_time = Some(Instant::now());
                     }
+                }
+            }
+            IntakeState::PartialIntake => {
+                if line_tracker.reflectivity().unwrap_or(0.0)
+                    < line_tracker_zero + LINE_TRACKER_THRESHOLD
+                {
+                    motor.set_voltage(motor.max_voltage()).context(MotorSnafu)?;
+                } else {
+                    motor.brake(BrakeMode::Brake).context(MotorSnafu)?;
                 }
             }
             IntakeState::Reverse => {
@@ -258,6 +283,11 @@ impl Intake {
             },
             Direction::Reverse => IntakeState::Reverse,
         };
+    }
+
+    pub async fn partial_intake(&self) {
+        let mut state = self.state.lock().await;
+        *state = IntakeState::PartialIntake;
     }
 
     pub async fn run_forward_accept(&self, color: RingColor) {
