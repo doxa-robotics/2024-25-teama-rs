@@ -54,6 +54,7 @@ async fn route(robot: &mut Robot) {
             1.0,
             1.0,
             CONFIG,
+            false,
         ))
         .await;
     robot.intake.stop_hold();
@@ -65,12 +66,13 @@ async fn route(robot: &mut Robot) {
             1.0,
             1.0,
             CONFIG,
+            false,
         ))
         .await;
     robot
-     .drivetrain
-     .action(drivetrain_actions::forward(2.0, CONFIG))
-     .await;
+        .drivetrain
+        .action(drivetrain_actions::forward(2.0, CONFIG))
+        .await;
     robot.doinker.dominant().extend();
     robot
         .drivetrain
@@ -79,19 +81,14 @@ async fn route(robot: &mut Robot) {
             1.0,
             1.0,
             CONFIG,
+            false,
         ))
         .await;
     robot.doinker.dominant().retract();
     robot
-     .drivetrain
-     .action(drivetrain_actions::forward(2.0, CONFIG))
-     .await;
-
-
-    
-
-    
-
+        .drivetrain
+        .action(drivetrain_actions::forward(2.0, CONFIG))
+        .await;
 }
 
 pub async fn blue(robot: &mut Robot) {
