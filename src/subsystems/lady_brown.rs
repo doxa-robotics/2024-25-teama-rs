@@ -45,7 +45,6 @@ impl LadyBrownState {
 
 #[derive(Debug)]
 struct LadyBrownInner {
-    gear_ratio: f64,
     state: LadyBrownState,
 }
 
@@ -81,7 +80,6 @@ impl LadyBrown {
         pid.d(0.11, f64::MAX);
 
         let inner = Rc::new(RefCell::new(LadyBrownInner {
-            gear_ratio,
             state: LadyBrownState::default(),
         }));
         let inner_clone = inner.clone();
