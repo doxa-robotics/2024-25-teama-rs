@@ -1,4 +1,4 @@
-use core::time::Duration;
+use core::{f64::consts::PI, time::Duration};
 
 use libdoxa::{
     path_planner::cubic_parametric::CubicParametricPath,
@@ -6,7 +6,7 @@ use libdoxa::{
 };
 use vexide::prelude::Motor;
 
-const TILES_TO_MM: f64 = 600.0;
+pub const TILES_TO_MM: f64 = 600.0;
 
 pub const CONFIG: ActionConfig = ActionConfig {
     linear_kp: 0.08,
@@ -77,11 +77,19 @@ pub fn smooth_to_point(
     start_easing: f64,
     end_easing: f64,
     config: ActionConfig,
+    reverse: bool,
 ) -> impl libdoxa::subsystems::drivetrain::actions::Action {
     libdoxa::subsystems::drivetrain::actions::LazyAction::new(move |current_pose| {
         libdoxa::subsystems::drivetrain::actions::PurePursuitAction::new(
             CubicParametricPath::new(
-                current_pose,
+                Pose {
+                    offset: current_pose.offset,
+                    heading: if reverse {
+                        current_pose.heading - PI
+                    } else {
+                        current_pose.heading
+                    },
+                },
                 start_easing * TILES_TO_MM,
                 point * TILES_TO_MM,
                 end_easing * TILES_TO_MM,

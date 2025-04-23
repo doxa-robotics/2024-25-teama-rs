@@ -12,6 +12,7 @@ pub async fn red(robot: &mut Robot) {
             1.0, // start_easing
             1.0, // end_easing
             CONFIG,
+            false,
         ))
         .await;
 }

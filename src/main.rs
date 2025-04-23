@@ -184,9 +184,19 @@ async fn main(peripherals: Peripherals) {
                         autons::positive_rush::red
                     ),
                     route!(
-                        AutonCategory::RedPositive,
+                        AutonCategory::BluePositive,
                         "Positive rush",
                         autons::positive_rush::blue
+                    ),
+                    route!(
+                        AutonCategory::RedPositive,
+                        "Positive AWP",
+                        autons::positive_awp::red
+                    ),
+                    route!(
+                        AutonCategory::BluePositive,
+                        "Positive AWP",
+                        autons::positive_awp::blue
                     ),
                 ],
             ))
