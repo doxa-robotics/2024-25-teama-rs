@@ -7,7 +7,7 @@ use crate::{
     Robot,
 };
 
-pub async fn red(robot: &mut Robot) {
+async fn route(robot: &mut Robot) {
     robot
         .tracking
         .borrow_mut()
@@ -96,5 +96,16 @@ pub async fn red(robot: &mut Robot) {
 
 pub async fn blue(robot: &mut Robot) {
     robot.tracking.borrow_mut().set_reverse(true);
-    red(robot).await;
+    robot
+        .intake
+        .set_accept(Some(crate::subsystems::intake::RingColor::Blue));
+    route(robot).await;
+}
+
+pub async fn red(robot: &mut Robot) {
+    robot.tracking.borrow_mut().set_reverse(false);
+    robot
+        .intake
+        .set_accept(Some(crate::subsystems::intake::RingColor::Red));
+    route(robot).await;
 }
