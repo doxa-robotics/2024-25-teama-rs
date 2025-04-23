@@ -1,5 +1,5 @@
 use core::{
-    f64::consts::{FRAC_PI_2, FRAC_PI_4},
+    f64::consts::{FRAC_PI_2, FRAC_PI_4, PI},
     time::Duration,
 };
 
@@ -14,9 +14,13 @@ async fn route(robot: &mut Robot) {
     robot
         .tracking
         .borrow_mut()
-        .set_pose((0.5 * TILES_TO_MM, -2.7 * TILES_TO_MM, 0.0).into());
+        .set_pose((360.0, -1400.0, 0.74 - PI).into());
 
     // Alliance score
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(0.17, CONFIG))
+        .await;
     robot
         .lady_brown
         .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
@@ -24,6 +28,13 @@ async fn route(robot: &mut Robot) {
     robot
         .lady_brown
         .set_state(crate::subsystems::lady_brown::LadyBrownState::Initial);
+    robot
+        .drivetrain
+        .action(drivetrain_actions::turn_to_point(
+            (2.0, -1.0).into(),
+            CONFIG.with_turn_error_tolerance(0.3),
+        ))
+        .await;
 
     // Corner
     let intake_clone = robot.intake.clone();

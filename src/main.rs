@@ -154,8 +154,7 @@ async fn main(peripherals: Peripherals) {
         while inertial.borrow().is_calibrating().unwrap() {
             vexide::time::sleep(Duration::from_millis(100)).await;
         }
-        autons::test::red(&mut robot).await;
-        log::debug!("run");
+        autons::positive_awp::red(&mut robot).await;
     }
     if vexide::competition::is_connected() {
         robot
