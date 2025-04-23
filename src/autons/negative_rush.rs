@@ -3,11 +3,12 @@ use core::f64::consts::FRAC_PI_2;
 use vexide::prelude::Direction;
 
 use crate::{
-    subsystems::drivetrain_actions::{self, forward, CONFIG},
+    subsystems::drivetrain_actions::{self, CONFIG},
     Robot,
 };
 
 async fn route(robot: &mut Robot) {
+    //Starting position
     robot
         .tracking
         .borrow_mut()
@@ -16,20 +17,24 @@ async fn route(robot: &mut Robot) {
         .drivetrain
         .action(drivetrain_actions::forward(1.75, CONFIG))
         .await;
+
+    //doinker
+
+    robot.doinker.dominant().extend();
+    //
     robot
         .drivetrain
         .action(drivetrain_actions::smooth_to_point(
-            (-2.2, -0.2, 0.0).into(),
-            1.0,
-            1.0,
+            (-2.0, -0.4, 0.78).into(),
+            2.0,
+            4.0,
             CONFIG,
-            false,
+            true,
         ))
         .await;
-    robot
-        .drivetrain
-        .action(drivetrain_actions::forward(0.3, CONFIG))
-        .await;
+    
+    //run intake and extend clamp
+    robot.intake.partial_intake();
     robot.clamp.extend();
     robot
         .drivetrain
@@ -41,12 +46,16 @@ async fn route(robot: &mut Robot) {
             false,
         ))
         .await;
+    
     robot
         .drivetrain
         .action(drivetrain_actions::forward(-0.3, CONFIG))
         .await;
-    robot.clamp.extend();
+    //unclamp, clamp and doinker. Start intake.
+    robot.clamp.retract();
+    robot.doinker.dominant().retract();
     robot.intake.run(Direction::Forward);
+
     robot
         .drivetrain
         .action(drivetrain_actions::smooth_to_point(
@@ -57,18 +66,21 @@ async fn route(robot: &mut Robot) {
             false,
         ))
         .await;
-    robot.intake.stop_hold();
 
+    robot.intake.stop_hold();
+    robot.intake_raiser.extend();
+    
     robot
         .drivetrain
         .action(drivetrain_actions::smooth_to_point(
-            (-2.0, -2.0, 0.0).into(),
+            (-2.0, 0.0, 0.0).into(),
             1.0,
             1.0,
             CONFIG,
             false,
         ))
         .await;
+
     robot
         .drivetrain
         .action(drivetrain_actions::forward(2.0, CONFIG))
