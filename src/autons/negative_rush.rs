@@ -69,38 +69,38 @@ async fn route(robot: &mut Robot) {
 
     robot.intake.stop_hold();
     robot.intake_raiser.extend();
-    
-    robot
-        .drivetrain
-        .action(drivetrain_actions::smooth_to_point(
-            (-2.0, 0.0, 0.0).into(),
-            1.0,
-            1.0,
-            CONFIG,
-            false,
-        ))
-        .await;
+    robot.clamp.extend();
 
     robot
         .drivetrain
-        .action(drivetrain_actions::forward(2.0, CONFIG))
-        .await;
-    robot.doinker.dominant().extend();
-    robot
-        .drivetrain
         .action(drivetrain_actions::smooth_to_point(
-            (-0.0, -2.0, -1.57).into(),
+            (0.0, -2.0, 0.0).into(),
             1.0,
             1.0,
             CONFIG,
             false,
         ))
         .await;
-    robot.doinker.dominant().retract();
+    robot.intake.partial_intake();
+    robot.intake_raiser.retract();
+
     robot
         .drivetrain
-        .action(drivetrain_actions::forward(2.0, CONFIG))
+        .action(drivetrain_actions::smooth_to_point(
+            (-0.0, -3.0, -1.57).into(),
+            1.0,
+            1.0,
+            CONFIG,
+            false,
+        ))
         .await;
+    
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(-2.0, CONFIG))
+        .await;
+  
+  
 }
 
 pub async fn blue(robot: &mut Robot) {
