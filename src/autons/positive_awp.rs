@@ -124,7 +124,7 @@ async fn route(robot: &mut Robot) {
             CONFIG.with_linear_error_tolerance(100.0),
         ))
         .await;
-    sleep(Duration::from_millis(700)).await;
+    sleep(Duration::from_millis(200)).await;
 
     // Get the ring in front of alliance stake
     robot.intake_raiser.extend();
@@ -144,7 +144,10 @@ async fn route(robot: &mut Robot) {
         .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
     robot
         .drivetrain
-        .action(drivetrain_actions::turn_to_point((0.0, 0.0).into(), CONFIG))
+        .action(drivetrain_actions::turn_to_point(
+            (0.0, 0.0).into(),
+            CONFIG.with_turn_error_tolerance(0.2),
+        ))
         .await;
     robot
         .drivetrain
