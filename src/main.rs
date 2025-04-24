@@ -16,7 +16,9 @@ use core::{cell::RefCell, time::Duration};
 use ::autons::prelude::{SelectCompete, SelectCompeteExt};
 use autons::AutonCategory;
 use autons_controller::{route, ControllerSelect};
-use libdoxa::{subsystems::tracking::wheel::TrackingWheel, utils::pose::Pose};
+use libdoxa::{
+    debug_render::DebugRender, subsystems::tracking::wheel::TrackingWheel, utils::pose::Pose,
+};
 use log::{error, info};
 use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp, Doinker, IntakeRaiser};
 use utils::logger;
@@ -69,7 +71,7 @@ async fn main(peripherals: Peripherals) {
     let left_motors = Rc::new(RefCell::new(MotorGroup::new(vec![
         Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
         Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
-        Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
+        Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
     ])));
     let right_motors = Rc::new(RefCell::new(MotorGroup::new(vec![
         Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
@@ -80,10 +82,10 @@ async fn main(peripherals: Peripherals) {
     let tracking = Rc::new(RefCell::new(
         libdoxa::subsystems::tracking::TrackingSubsystem::new(
             [TrackingWheel::new(
-                158.0,
+                158.0 * 2.0,
                 42.0,
                 libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Perpendicular,
-                RotationSensor::new(peripherals.port_20, Direction::Forward), // TODO: verify this is the right port (was 19)
+                RotationSensor::new(peripherals.port_19, Direction::Forward), // TODO: verify this is the right port (was 19)
             )],
             [
                 TrackingWheel::new(
@@ -142,6 +144,9 @@ async fn main(peripherals: Peripherals) {
         )
         .expect("failed to initialize arm"),
     };
+
+    let mut debug_render = DebugRender::new(peripherals.display);
+    debug_render.render();
 
     info!("entering competing");
     let controller = robot.controller.clone();

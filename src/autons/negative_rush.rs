@@ -28,11 +28,12 @@ async fn route(robot: &mut Robot) {
             (-2.0, -0.4, 0.78).into(),
             2.0,
             4.0,
-            CONFIG,
+            false,
             true,
+            CONFIG,
         ))
         .await;
-    
+
     //run intake and extend clamp
     robot.intake.partial_intake();
     robot.clamp.extend();
@@ -42,11 +43,12 @@ async fn route(robot: &mut Robot) {
             (-1.25, -0.6, 2.36).into(),
             1.0,
             1.0,
-            CONFIG,
             false,
+            false,
+            CONFIG,
         ))
         .await;
-    
+
     robot
         .drivetrain
         .action(drivetrain_actions::forward(-0.3, CONFIG))
@@ -62,8 +64,9 @@ async fn route(robot: &mut Robot) {
             (-2.0, -1.0, 3.92).into(),
             1.0,
             1.0,
-            CONFIG,
             false,
+            false,
+            CONFIG,
         ))
         .await;
 
@@ -77,8 +80,9 @@ async fn route(robot: &mut Robot) {
             (0.0, -2.0, 0.0).into(),
             1.0,
             1.0,
-            CONFIG,
             false,
+            false,
+            CONFIG,
         ))
         .await;
     robot.intake.partial_intake();
@@ -90,17 +94,16 @@ async fn route(robot: &mut Robot) {
             (-0.0, -3.0, -1.57).into(),
             1.0,
             1.0,
-            CONFIG,
             false,
+            false,
+            CONFIG,
         ))
         .await;
-    
+
     robot
         .drivetrain
         .action(drivetrain_actions::forward(-2.0, CONFIG))
         .await;
-  
-  
 }
 
 pub async fn blue(robot: &mut Robot) {
