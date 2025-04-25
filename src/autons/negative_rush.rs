@@ -1,6 +1,10 @@
-use core::f64::consts::FRAC_PI_2;
+use core::{f64::consts::FRAC_PI_2, time::Duration};
 
-use vexide::prelude::Direction;
+use vexide::{
+    prelude::{Direction, Motor},
+    task::spawn,
+    time::sleep,
+};
 
 use crate::{
     subsystems::drivetrain_actions::{self, CONFIG},
@@ -12,42 +16,61 @@ async fn route(robot: &mut Robot) {
     robot
         .tracking
         .borrow_mut()
-        .set_pose((-1620_f64, -1632_f64, FRAC_PI_2).into());
-    robot
-        .drivetrain
-        .action(drivetrain_actions::forward(1.75, CONFIG))
-        .await;
+        .set_pose((-600.0 * 2.0 - 350.0, -600.0 * 2.0 - 120.0, FRAC_PI_2).into());
 
     //doinker
 
-    robot.doinker.dominant().extend();
-    //
+    robot.doinker.non_dominant().extend();
+    robot.intake.partial_intake();
     robot
         .drivetrain
         .action(drivetrain_actions::smooth_to_point(
-            (-2.0, -0.4, 0.78).into(),
-            2.0,
+            (-2.3, -0.4, 1.0).into(),
             4.0,
+            2.0,
             false,
+            true,
+            CONFIG.with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.7),
+        ))
+        .await;
+    robot
+        .drivetrain
+        .action(drivetrain_actions::drive_to_point(
+            (-1.5, -0.4).into(),
+            false,
+            CONFIG,
+        ))
+        .await;
+    robot.doinker.non_dominant().retract();
+    let mut clamp_clone = robot.clamp.clone();
+    spawn(async move {
+        sleep(Duration::from_millis(1000)).await;
+        clamp_clone.extend();
+    })
+    .detach();
+    robot
+        .drivetrain
+        .action(drivetrain_actions::drive_to_point(
+            (-0.5, -1.5).into(),
             true,
             CONFIG,
         ))
         .await;
 
     //run intake and extend clamp
-    robot.intake.partial_intake();
     robot.clamp.extend();
-    robot
-        .drivetrain
-        .action(drivetrain_actions::smooth_to_point(
-            (-1.25, -0.6, 2.36).into(),
-            1.0,
-            1.0,
-            false,
-            false,
-            CONFIG,
-        ))
-        .await;
+    // robot
+    //     .drivetrain
+    //     .action(drivetrain_actions::smooth_to_point(
+    //         (-1.0, -1.0, 0.0).into(),
+    //         2.0,
+    //         2.0,
+    //         true,
+    //         false,
+    //         CONFIG,
+    //     ))
+    //     .await;
+    return;
 
     robot
         .drivetrain

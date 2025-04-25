@@ -3,7 +3,16 @@ use crate::{
     Robot,
 };
 
-async fn route(robot: &mut Robot) {}
+async fn route(robot: &mut Robot) {
+    robot
+        .drivetrain
+        .action(drivetrain_actions::turn_to_point((1.0, 3.0).into(), CONFIG))
+        .await;
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(0.1, CONFIG))
+        .await;
+}
 
 pub async fn blue(robot: &mut Robot) {
     robot.tracking.borrow_mut().set_reverse(true);

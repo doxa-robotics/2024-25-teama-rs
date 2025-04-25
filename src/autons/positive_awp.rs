@@ -99,14 +99,14 @@ async fn route(robot: &mut Robot) {
         .await;
     let mut clamp_clone = robot.clamp.clone();
     spawn(async move {
-        sleep(Duration::from_millis(1400)).await;
+        sleep(Duration::from_millis(1150)).await;
         clamp_clone.extend();
     })
     .detach();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (1.2, -1.0).into(),
+            (1.2, -0.9).into(),
             true,
             CONFIG, // CONFIG.with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.6),
         ))
@@ -128,15 +128,20 @@ async fn route(robot: &mut Robot) {
 
     // Get the ring in front of alliance stake
     robot.intake_raiser.extend();
+    let mut intake_raiser = robot.intake_raiser.clone();
+    spawn(async move {
+        sleep(Duration::from_millis(2500)).await;
+        intake_raiser.retract();
+    })
+    .detach();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (0.0, -2.0).into(),
+            (0.0, -2.1).into(),
             false,
             CONFIG,
         ))
         .await;
-    robot.intake_raiser.retract();
 
     // Drive to bar touch
     robot

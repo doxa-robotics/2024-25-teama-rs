@@ -74,7 +74,7 @@ async fn main(peripherals: Peripherals) {
         Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
     ])));
     let right_motors = Rc::new(RefCell::new(MotorGroup::new(vec![
-        Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+        Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
         Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
         Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
     ])));
@@ -159,7 +159,8 @@ async fn main(peripherals: Peripherals) {
         while inertial.borrow().is_calibrating().unwrap() {
             vexide::time::sleep(Duration::from_millis(100)).await;
         }
-        autons::positive_awp::red(&mut robot).await;
+        autons::negative_rush::red(&mut robot).await;
+        // autons::test::red(&mut robot).await;
     }
     if vexide::competition::is_connected() {
         robot
