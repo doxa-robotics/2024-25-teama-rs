@@ -33,6 +33,7 @@ async fn route(robot: &mut Robot) {
             CONFIG.with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.7),
         ))
         .await;
+    robot.doinker.non_dominant().retract();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
@@ -41,10 +42,9 @@ async fn route(robot: &mut Robot) {
             CONFIG,
         ))
         .await;
-    robot.doinker.non_dominant().retract();
     let mut clamp_clone = robot.clamp.clone();
     spawn(async move {
-        sleep(Duration::from_millis(1000)).await;
+        sleep(Duration::from_millis(2000)).await;
         clamp_clone.extend();
     })
     .detach();
@@ -56,9 +56,18 @@ async fn route(robot: &mut Robot) {
             CONFIG,
         ))
         .await;
+    robot.clamp.extend();
+    robot.intake.run(Direction::Forward);
+    robot
+        .drivetrain
+        .action(drivetrain_actions::drive_to_point(
+            (-2.0, -2.4).into(),
+            false,
+            CONFIG,
+        ))
+        .await;
 
     //run intake and extend clamp
-    robot.clamp.extend();
     // robot
     //     .drivetrain
     //     .action(drivetrain_actions::smooth_to_point(
