@@ -107,9 +107,9 @@ async fn main(peripherals: Peripherals) {
         ),
     ));
 
-    let mut robot = Robot {
+    let robot = Robot {
         controller: Rc::new(RefCell::new(peripherals.primary_controller)),
-        is_selecting: Rc::new(RefCell::new(false)),
+        is_selecting: Rc::new(RefCell::new(true)),
 
         intake_raiser: IntakeRaiser::new([AdiDigitalOut::new(peripherals.adi_c)]),
 
