@@ -143,7 +143,9 @@ pub async fn blue(robot: &mut Robot) {
     robot
         .intake
         .set_accept(Some(crate::subsystems::intake::RingColor::Blue));
-    route(robot).await;
+    robot
+        .doinker
+        .set_mirrored_state(libdoxa::subsystems::pneumatic::MirroredState::Mirrored);
 }
 
 pub async fn red(robot: &mut Robot) {
