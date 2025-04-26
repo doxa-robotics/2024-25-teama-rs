@@ -25,7 +25,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::smooth_to_point(
-            (-2.3, -0.4, 1.0).into(),
+            (-2.3, -0.6, 1.0).into(),
             4.0,
             2.0,
             false,
@@ -37,7 +37,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (-1.5, -0.4).into(),
+            (-1.5, -0.7).into(),
             false,
             CONFIG,
         ))
@@ -66,75 +66,15 @@ async fn route(robot: &mut Robot) {
             CONFIG,
         ))
         .await;
-
-    //run intake and extend clamp
-    // robot
-    //     .drivetrain
-    //     .action(drivetrain_actions::smooth_to_point(
-    //         (-1.0, -1.0, 0.0).into(),
-    //         2.0,
-    //         2.0,
-    //         true,
-    //         false,
-    //         CONFIG,
-    //     ))
-    //     .await;
-    return;
-
-    robot
-        .drivetrain
-        .action(drivetrain_actions::forward(-0.3, CONFIG))
-        .await;
-    //unclamp, clamp and doinker. Start intake.
-    robot.clamp.retract();
-    robot.doinker.dominant().retract();
-    robot.intake.run(Direction::Forward);
-
-    robot
-        .drivetrain
-        .action(drivetrain_actions::smooth_to_point(
-            (-2.0, -1.0, 3.92).into(),
-            1.0,
-            1.0,
-            false,
-            false,
-            CONFIG,
-        ))
-        .await;
-
-    robot.intake.stop_hold();
+    sleep(Duration::from_millis(600)).await;
     robot.intake_raiser.extend();
-    robot.clamp.extend();
-
     robot
         .drivetrain
-        .action(drivetrain_actions::smooth_to_point(
-            (0.0, -2.0, 0.0).into(),
-            1.0,
-            1.0,
-            false,
+        .action(drivetrain_actions::drive_to_point(
+            (-2.7, -2.7).into(),
             false,
             CONFIG,
         ))
-        .await;
-    robot.intake.partial_intake();
-    robot.intake_raiser.retract();
-
-    robot
-        .drivetrain
-        .action(drivetrain_actions::smooth_to_point(
-            (-0.0, -3.0, -1.57).into(),
-            1.0,
-            1.0,
-            false,
-            false,
-            CONFIG,
-        ))
-        .await;
-
-    robot
-        .drivetrain
-        .action(drivetrain_actions::forward(-2.0, CONFIG))
         .await;
 }
 
