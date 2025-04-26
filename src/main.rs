@@ -107,7 +107,7 @@ async fn main(peripherals: Peripherals) {
         ),
     ));
 
-    let robot = Robot {
+    let mut robot = Robot {
         controller: Rc::new(RefCell::new(peripherals.primary_controller)),
         is_selecting: Rc::new(RefCell::new(true)),
 

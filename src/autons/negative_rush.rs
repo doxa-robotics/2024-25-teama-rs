@@ -1,4 +1,7 @@
-use core::{f64::consts::FRAC_PI_2, time::Duration};
+use core::{
+    f64::consts::{FRAC_PI_2, PI},
+    time::Duration,
+};
 
 use vexide::{
     prelude::{Direction, Motor},
@@ -7,16 +10,16 @@ use vexide::{
 };
 
 use crate::{
-    subsystems::drivetrain_actions::{self, CONFIG},
+    subsystems::drivetrain_actions::{self, set_reverse, CONFIG},
     Robot,
 };
 
 async fn route(robot: &mut Robot) {
     //Starting position
-    robot
-        .tracking
-        .borrow_mut()
-        .set_pose((-600.0 * 2.0 - 350.0, -600.0 * 2.0 - 120.0, FRAC_PI_2).into());
+    // robot
+    //     .tracking
+    //     .borrow_mut()
+    //     .set_pose((-600.0 * 2.0 - 350.0, -600.0 * 2.0 - 120.0, FRAC_PI_2).into());
 
     //doinker
 
@@ -139,13 +142,18 @@ async fn route(robot: &mut Robot) {
 }
 
 pub async fn blue(robot: &mut Robot) {
-    robot.tracking.borrow_mut().set_reverse(true);
+    set_reverse(true);
     robot
         .intake
         .set_accept(Some(crate::subsystems::intake::RingColor::Blue));
     robot
         .doinker
         .set_mirrored_state(libdoxa::subsystems::pneumatic::MirroredState::Mirrored);
+    robot
+        .tracking
+        .borrow_mut()
+        .set_pose((-600.0 * 2.0 - 350.0, 600.0 * 2.0 - 120.0, PI - FRAC_PI_2).into());
+    route(robot).await;
 }
 
 pub async fn red(robot: &mut Robot) {
@@ -153,5 +161,9 @@ pub async fn red(robot: &mut Robot) {
     robot
         .intake
         .set_accept(Some(crate::subsystems::intake::RingColor::Red));
+    robot
+        .tracking
+        .borrow_mut()
+        .set_pose((-600.0 * 2.0 - 350.0, -600.0 * 2.0 - 120.0, FRAC_PI_2).into());
     route(robot).await;
 }

@@ -22,10 +22,10 @@ snafu = { version = "0.8.5", default-features = false, features = [
 async-trait = "0.1.83"
 vexide = "0.7.0"
 vexide-motorgroup = "2.0.0"
-libdoxa = { path = "../libdoxa" }
+libdoxa = { path = "../libdoxa", features = ["unsafe_debug_render"] }
 colorsys = { version = "0.6.7", default-features = false }
 autons = "0.1.0"
-autons-controller = { git = "https://github.com/doxa-robotics/autons-controller.git", rev = "ed1f5da8e758e2da3145df352f2b3bdced47d9dd" }
+autons-controller = { git = "https://github.com/doxa-robotics/autons-controller.git", branch = "main" }
 
 [profile.release]
 strip = true
