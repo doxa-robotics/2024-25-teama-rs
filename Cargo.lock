@@ -47,7 +47,7 @@ dependencies = [
 [[package]]
 name = "autons-controller"
 version = "0.1.0"
-source = "git+https://github.com/doxa-robotics/autons-controller.git?branch=main#12b414ab166d502f1d94c2f742bcfb740555cd1e"
+source = "git+https://github.com/doxa-robotics/autons-controller.git?rev=eb829f0cd176036b2c351496839b8db7147d95a1#eb829f0cd176036b2c351496839b8db7147d95a1"
 dependencies = [
  "autons",
  "futures",

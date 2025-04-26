@@ -25,7 +25,7 @@ vexide-motorgroup = "2.0.0"
 libdoxa = { path = "../libdoxa" }
 colorsys = { version = "0.6.7", default-features = false }
 autons = "0.1.0"
-autons-controller = { git = "https://github.com/doxa-robotics/autons-controller.git", branch = "main" }
+autons-controller = { git = "https://github.com/doxa-robotics/autons-controller.git", rev = "eb829f0cd176036b2c351496839b8db7147d95a1" }
 
 [profile.release]
 strip = true

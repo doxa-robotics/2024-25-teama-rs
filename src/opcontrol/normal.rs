@@ -26,11 +26,11 @@ pub enum OpcontrolError {}
 pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
     robot.intake.stop();
     loop {
-        let state = robot
-            .controller
-            .try_lock()
-            .and_then(|c| c.state().ok())
-            .unwrap_or_default();
+        if *robot.is_selecting.borrow() {
+            sleep(Duration::from_millis(10)).await;
+            continue;
+        }
+        let state = robot.controller.borrow().state().unwrap_or_default();
 
         let speed = curve_drive(state.left_stick.y());
         let turn = curve_turn(state.right_stick.x());

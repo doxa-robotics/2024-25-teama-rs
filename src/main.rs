@@ -28,7 +28,8 @@ use vexide_motorgroup::MotorGroup;
 const DRIVETRAIN_CIRCUMFERENCE: f64 = 165.0;
 
 struct Robot {
-    controller: Arc<Mutex<Controller>>,
+    controller: Rc<RefCell<Controller>>,
+    is_selecting: Rc<RefCell<bool>>,
 
     drivetrain: libdoxa::subsystems::drivetrain::Drivetrain,
     tracking: Rc<RefCell<libdoxa::subsystems::tracking::TrackingSubsystem>>,
@@ -107,7 +108,8 @@ async fn main(peripherals: Peripherals) {
     ));
 
     let mut robot = Robot {
-        controller: Arc::new(Mutex::new(peripherals.primary_controller)),
+        controller: Rc::new(RefCell::new(peripherals.primary_controller)),
+        is_selecting: Rc::new(RefCell::new(false)),
 
         intake_raiser: IntakeRaiser::new([AdiDigitalOut::new(peripherals.adi_c)]),
 
@@ -150,6 +152,7 @@ async fn main(peripherals: Peripherals) {
 
     info!("entering competing");
     let controller = robot.controller.clone();
+    let is_selecting = robot.is_selecting.clone();
 
     sleep(Duration::from_millis(100)).await;
 
@@ -162,47 +165,44 @@ async fn main(peripherals: Peripherals) {
         autons::negative_rush::red(&mut robot).await;
         // autons::test::red(&mut robot).await;
     }
-    if vexide::competition::is_connected() {
-        robot
-            .compete(ControllerSelect::new(
-                controller.clone(),
-                [
-                    route!(AutonCategory::Test, "Test red", autons::test::red),
-                    route!(AutonCategory::Test, "Test blue", autons::test::blue),
-                    route!(
-                        AutonCategory::RedNegative,
-                        "Negative rush",
-                        autons::negative_rush::red
-                    ),
-                    route!(
-                        AutonCategory::BlueNegative,
-                        "Negative rush",
-                        autons::negative_rush::blue
-                    ),
-                    route!(
-                        AutonCategory::RedPositive,
-                        "Positive rush",
-                        autons::positive_rush::red
-                    ),
-                    route!(
-                        AutonCategory::BluePositive,
-                        "Positive rush",
-                        autons::positive_rush::blue
-                    ),
-                    route!(
-                        AutonCategory::RedPositive,
-                        "Positive AWP",
-                        autons::positive_awp::red
-                    ),
-                    route!(
-                        AutonCategory::BluePositive,
-                        "Positive AWP",
-                        autons::positive_awp::blue
-                    ),
-                ],
-            ))
-            .await;
-    } else {
-        robot.driver().await;
-    }
+    robot
+        .compete(ControllerSelect::new(
+            controller.clone(),
+            is_selecting.clone(),
+            [
+                route!(AutonCategory::Test, "Test red", autons::test::red),
+                route!(AutonCategory::Test, "Test blue", autons::test::blue),
+                route!(
+                    AutonCategory::RedNegative,
+                    "Negative rush",
+                    autons::negative_rush::red
+                ),
+                route!(
+                    AutonCategory::BlueNegative,
+                    "Negative rush",
+                    autons::negative_rush::blue
+                ),
+                route!(
+                    AutonCategory::RedPositive,
+                    "Positive rush",
+                    autons::positive_rush::red
+                ),
+                route!(
+                    AutonCategory::BluePositive,
+                    "Positive rush",
+                    autons::positive_rush::blue
+                ),
+                route!(
+                    AutonCategory::RedPositive,
+                    "Positive AWP",
+                    autons::positive_awp::red
+                ),
+                route!(
+                    AutonCategory::BluePositive,
+                    "Positive AWP",
+                    autons::positive_awp::blue
+                ),
+            ],
+        ))
+        .await;
 }
