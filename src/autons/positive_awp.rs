@@ -1,9 +1,6 @@
-use core::{
-    f64::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_8, PI},
-    time::Duration,
-};
+use core::{f64::consts::PI, time::Duration};
 
-use vexide::{prelude::Motor, task::spawn, time::sleep};
+use vexide::time::sleep;
 
 use crate::{
     subsystems::drivetrain_actions::{self, CONFIG, TILES_TO_MM},
@@ -19,7 +16,7 @@ async fn route(robot: &mut Robot) {
     // Alliance score
     robot
         .drivetrain
-        .action(drivetrain_actions::forward(0.23, CONFIG))
+        .action(drivetrain_actions::forward(0.25, CONFIG))
         .await;
     robot
         .lady_brown
@@ -28,98 +25,35 @@ async fn route(robot: &mut Robot) {
     robot
         .lady_brown
         .set_state(crate::subsystems::lady_brown::LadyBrownState::Initial);
-    // robot
-    //     .drivetrain
-    //     .action(drivetrain_actions::turn_to_point(
-    //         // (2.0, -1.0).into(),
-    //         (-1.0, -4.0).into(),
-    //         CONFIG.with_turn_error_tolerance(0.3),
-    //     ))
-    //     .await;
-
-    // // Corner
-    // let intake_clone = robot.intake.clone();
-    // spawn(async move {
-    //     sleep(Duration::from_millis(1500)).await;
-    //     intake_clone.partial_intake();
-    // })
-    // .detach();
-    // robot
-    //     .drivetrain
-    //     .action(drivetrain_actions::smooth_to_point(
-    //         (2.2, -2.2, PI * 0.75).into(),
-    //         2.0,
-    //         4.0,
-    //         CONFIG
-    //             .with_linear_error_tolerance(100.0)
-    //             .with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.7),
-    //         false,
-    //     ))
-    //     .await;
-    // robot
-    //     .drivetrain
-    //     .action(drivetrain_actions::turn_to_point(
-    //         (3.0, -3.0).into(),
-    //         CONFIG.with_turn_error_tolerance(0.15),
-    //     ))
-    //     .await;
-    // robot
-    //     .drivetrain
-    //     .action(drivetrain_actions::forward(
-    //         0.1,
-    //         CONFIG
-    //             .with_linear_error_tolerance(300.0)
-    //             .with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.3),
-    //     ))
-    //     .await;
-
-    // Get goal
-    // robot
-    //     .drivetrain
-    //     .action(drivetrain_actions::smooth_to_point(
-    //         (1.0, -2.0, FRAC_PI_2).into(),
-    //         1.0,
-    //         3.0,
-    //         true,
-    //         true,
-    //         CONFIG
-    //             .with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.4)
-    //             .with_pursuit_lookahead(80.0)
-    //             .with_pursuit_turn_kp(4.0)
-    //             .with_linear_error_tolerance(120.0),
-    //     ))
-    //     .await;
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (1.2, -2.0).into(),
+            (1.1, -2.0).into(),
             true,
-            CONFIG, // CONFIG.with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.6),
+            CONFIG,
         ))
         .await;
-    let mut clamp_clone = robot.clamp.clone();
-    spawn(async move {
-        sleep(Duration::from_millis(1150)).await;
-        clamp_clone.extend();
-    })
-    .detach();
+    let mut clamp = robot.clamp.clone();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (1.2, -0.9).into(),
+            (1.1, -0.9).into(),
             true,
             CONFIG, // CONFIG.with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.6),
         ))
+        .with_callback(move |pose| {
+            if pose.y() > -1.3 * TILES_TO_MM {
+                clamp.extend();
+            }
+        })
         .await;
-    robot.clamp.extend();
-    // sleep(Duration::from_millis(500)).await;
     robot.intake.run(vexide::prelude::Direction::Forward);
 
     // Get ring at (2.0, -1.0)
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (2.0, -1.0).into(),
+            (2.1, -1.0).into(),
             false,
             CONFIG.with_linear_error_tolerance(100.0),
         ))
@@ -127,37 +61,37 @@ async fn route(robot: &mut Robot) {
     sleep(Duration::from_millis(200)).await;
 
     // Get the ring in front of alliance stake
-    robot.intake_raiser.extend();
     let mut intake_raiser = robot.intake_raiser.clone();
-    spawn(async move {
-        sleep(Duration::from_millis(2500)).await;
-        intake_raiser.retract();
-    })
-    .detach();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (0.0, -2.1).into(),
+            (-0.2, -2.1).into(),
             false,
-            CONFIG,
+            CONFIG.with_linear_error_tolerance(50.0),
         ))
+        .with_callback(move |pose| {
+            if pose.x() < -1.5 * TILES_TO_MM {
+                intake_raiser.extend();
+            } else if pose.x() < 0.2 * TILES_TO_MM {
+                intake_raiser.retract();
+            }
+        })
         .await;
 
     // Drive to bar touch
     robot
-        .lady_brown
-        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
-    robot
         .drivetrain
-        .action(drivetrain_actions::turn_to_point(
-            (0.0, 0.0).into(),
-            CONFIG.with_turn_error_tolerance(0.2),
+        .action(drivetrain_actions::drive_to_point(
+            (0.0, -1.45).into(),
+            false,
+            CONFIG
+                .with_turn_error_tolerance(0.2)
+                .with_linear_error_tolerance(100.0),
         ))
         .await;
     robot
-        .drivetrain
-        .action(drivetrain_actions::forward(0.8, CONFIG))
-        .await;
+        .lady_brown
+        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
 
     // TODO: touch
 }

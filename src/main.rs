@@ -107,7 +107,8 @@ async fn main(peripherals: Peripherals) {
         ),
     ));
 
-    let robot = Robot {
+    #[allow(unused_mut)]
+    let mut robot = Robot {
         controller: Rc::new(RefCell::new(peripherals.primary_controller)),
         is_selecting: Rc::new(RefCell::new(true)),
 
@@ -162,7 +163,7 @@ async fn main(peripherals: Peripherals) {
         while inertial.borrow().is_calibrating().unwrap() {
             vexide::time::sleep(Duration::from_millis(100)).await;
         }
-        autons::negative_rush::red(&mut robot).await;
+        autons::positive_awp::red(&mut robot).await;
         // autons::test::red(&mut robot).await;
     }
     robot
