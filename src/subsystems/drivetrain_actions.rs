@@ -1,24 +1,10 @@
-use core::{cell::RefCell, f64::consts::PI, ops::Deref, time::Duration};
+use core::{f64::consts::PI, time::Duration};
 
 use libdoxa::{
     path_planner::cubic_parametric::CubicParametricPath,
     subsystems::drivetrain::actions::config::ActionConfig, utils::pose::Pose,
 };
 use vexide::prelude::Motor;
-
-struct UnsafeRefCell<T>(RefCell<T>);
-
-unsafe impl<T> Sync for UnsafeRefCell<T> {}
-
-impl<T> Deref for UnsafeRefCell<T> {
-    type Target = RefCell<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-static REVERSED: UnsafeRefCell<bool> = UnsafeRefCell(RefCell::new(false));
 
 pub const TILES_TO_MM: f64 = 600.0;
 
@@ -70,11 +56,7 @@ pub fn turn_to_point(
     config: ActionConfig,
 ) -> impl libdoxa::subsystems::drivetrain::actions::Action {
     libdoxa::subsystems::drivetrain::actions::TurnToPointAction::new(
-        if *REVERSED.borrow() {
-            point.reversed()
-        } else {
-            point
-        } * TILES_TO_MM,
+        point * TILES_TO_MM,
         false,
         config,
     )
@@ -86,11 +68,7 @@ pub fn drive_to_point(
     config: ActionConfig,
 ) -> impl libdoxa::subsystems::drivetrain::actions::Action {
     libdoxa::subsystems::drivetrain::actions::DriveToPointAction::new(
-        if *REVERSED.borrow() {
-            point.reversed()
-        } else {
-            point
-        } * TILES_TO_MM,
+        point * TILES_TO_MM,
         reverse,
         config,
     )
@@ -100,14 +78,7 @@ pub fn boomerang_to_point(
     point: Pose,
     config: ActionConfig,
 ) -> impl libdoxa::subsystems::drivetrain::actions::Action {
-    libdoxa::subsystems::drivetrain::actions::BoomerangAction::new(
-        if *REVERSED.borrow() {
-            point.reversed()
-        } else {
-            point
-        } * TILES_TO_MM,
-        config,
-    )
+    libdoxa::subsystems::drivetrain::actions::BoomerangAction::new(point * TILES_TO_MM, config)
 }
 
 pub fn smooth_to_point(
@@ -130,19 +101,11 @@ pub fn smooth_to_point(
                     },
                 },
                 start_easing * TILES_TO_MM,
-                if *REVERSED.borrow() {
-                    point.reversed()
-                } else {
-                    point
-                } * TILES_TO_MM,
+                point * TILES_TO_MM,
                 end_easing * TILES_TO_MM,
             ),
             disable_seeking,
             config,
         )
     })
-}
-
-pub fn set_reverse(reverse: bool) {
-    *REVERSED.borrow_mut() = reverse;
 }
