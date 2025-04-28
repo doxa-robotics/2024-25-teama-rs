@@ -1,9 +1,18 @@
+use core::time::Duration;
+
+use vexide::time::sleep;
+
 use crate::{
     subsystems::drivetrain_actions::{self, CONFIG},
     Robot,
 };
 
 async fn route(robot: &mut Robot) {
+    loop {
+        log::debug!("{:?}", robot.tracking.borrow().pose());
+        sleep(Duration::from_millis(100)).await;
+    }
+    return;
     robot
         .drivetrain
         .action(drivetrain_actions::turn_to_point((1.0, 3.0).into(), CONFIG))

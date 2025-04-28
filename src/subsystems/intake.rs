@@ -305,16 +305,6 @@ impl Intake {
         state.state = IntakeState::PartialIntake;
     }
 
-    pub fn run_forward_accept(&self, color: RingColor) {
-        let mut state = self.state.borrow_mut();
-        state.state = IntakeState::Forward {
-            reject_time: None,
-            jam_time: None,
-            overcurrent_time: None,
-            current_ring: None,
-        };
-    }
-
     pub fn set_accept(&self, color: Option<RingColor>) {
         let mut state = self.state.borrow_mut();
         state.accept = color;

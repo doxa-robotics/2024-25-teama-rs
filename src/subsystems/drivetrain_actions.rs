@@ -34,7 +34,7 @@ pub const CONFIG: ActionConfig = ActionConfig {
     linear_error_tolerance: 15.0,
     linear_velocity_tolerance: 5.0,
     linear_tolerance_duration: Duration::from_millis(100),
-    linear_timeout: Duration::from_millis(3000),
+    linear_timeout: Duration::from_millis(2000),
     turn_error_tolerance: 0.2,
     turn_velocity_tolerance: 10.0,
     turn_tolerance_duration: Duration::from_millis(100),

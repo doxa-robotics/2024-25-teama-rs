@@ -163,7 +163,7 @@ async fn main(peripherals: Peripherals) {
         while inertial.borrow().is_calibrating().unwrap() {
             vexide::time::sleep(Duration::from_millis(100)).await;
         }
-        autons::positive_awp::red(&mut robot).await;
+        autons::negative_middle::red(&mut robot).await;
         // autons::test::red(&mut robot).await;
     }
     robot
@@ -182,6 +182,16 @@ async fn main(peripherals: Peripherals) {
                     AutonCategory::BlueNegative,
                     "Negative rush",
                     autons::negative_rush::blue
+                ),
+                route!(
+                    AutonCategory::RedNegative,
+                    "Negative middle",
+                    autons::negative_middle::red
+                ),
+                route!(
+                    AutonCategory::BlueNegative,
+                    "Negative middle",
+                    autons::negative_middle::blue
                 ),
                 route!(
                     AutonCategory::RedPositive,
