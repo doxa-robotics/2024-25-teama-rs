@@ -16,12 +16,12 @@ async fn route(robot: &mut Robot) {
     // Alliance score
     robot
         .drivetrain
-        .action(drivetrain_actions::forward(0.25, CONFIG))
+        .action(drivetrain_actions::forward(0.24, CONFIG))
         .await;
     robot
         .lady_brown
         .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
-    sleep(Duration::from_millis(700)).await;
+    sleep(Duration::from_millis(800)).await;
     robot
         .lady_brown
         .set_state(crate::subsystems::lady_brown::LadyBrownState::Initial);
@@ -70,10 +70,10 @@ async fn route(robot: &mut Robot) {
             CONFIG.with_linear_error_tolerance(50.0),
         ))
         .with_callback(move |pose| {
-            if pose.x() < -1.5 * TILES_TO_MM {
-                intake_raiser.extend();
-            } else if pose.x() < 0.2 * TILES_TO_MM {
+            if pose.x() < 0.2 * TILES_TO_MM {
                 intake_raiser.retract();
+            } else if pose.x() < 1.5 * TILES_TO_MM {
+                intake_raiser.extend();
             }
         })
         .await;
