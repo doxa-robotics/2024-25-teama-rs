@@ -44,29 +44,24 @@ async fn route(robot: &mut Robot) {
 
     // Get center rings
     robot.doinker.non_dominant().extend();
-    robot.intake.run(vexide::prelude::Direction::Forward);
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (-0.74, -0.41).into(),
+            (-0.75, -0.4).into(),
             false,
             CONFIG,
         ))
         .await;
     robot
         .drivetrain
-        .action(drivetrain_actions::forward(-0.15, CONFIG))
-        .await;
-    robot
-        .drivetrain
-        .action(drivetrain_actions::turn_to_point((0.7, 4.0).into(), CONFIG))
-        .await;
-    robot
-        .drivetrain
-        .action(drivetrain_actions::forward(0.1, CONFIG))
+        .action(drivetrain_actions::turn_to_point((0.7, 3.0).into(), CONFIG))
         .await;
     robot.doinker.dominant().extend();
-    sleep(Duration::from_millis(500)).await;
+    sleep(Duration::from_millis(1000)).await;
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(-1.0, CONFIG))
+        .await;
     return;
 
     // Get ring at (-2.0, -1.0)

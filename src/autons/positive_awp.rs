@@ -29,12 +29,12 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (1.1, -0.9).into(),
+            (1.15, -0.8).into(),
             true,
             CONFIG, // CONFIG.with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.6),
         ))
         .with_callback(move |pose| {
-            if pose.y() > -1.2 * TILES_TO_MM {
+            if pose.y() > -1.1 * TILES_TO_MM {
                 clamp.extend();
             }
         })
@@ -57,7 +57,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (-0.2, -2.1).into(),
+            (-0.2, -1.9).into(),
             false,
             CONFIG.with_linear_error_tolerance(50.0),
         ))
@@ -74,11 +74,12 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (0.0, -1.45).into(),
+            (-0.1, -1.4).into(),
             false,
             CONFIG
-                .with_turn_error_tolerance(0.2)
-                .with_linear_error_tolerance(100.0),
+                .with_turn_error_tolerance(0.1)
+                .with_linear_velocity_tolerance(100.0)
+                .with_linear_error_tolerance(200.0),
         ))
         .await;
     robot

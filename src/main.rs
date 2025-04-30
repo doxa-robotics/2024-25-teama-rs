@@ -81,10 +81,10 @@ async fn main(peripherals: Peripherals) {
     ])));
     let inertial = Rc::new(RefCell::new(InertialSensor::new(peripherals.port_18)));
     let tracking = Rc::new(RefCell::new(
-        libdoxa::subsystems::tracking::TrackingSubsystem::new(
+        libdoxa::subsystems::tracking::TrackingSubsystem::new::<RotationSensor, _, _>(
             [TrackingWheel::new(
-                158.0 * 2.0,
-                42.0,
+                158.0,
+                43.0,
                 libdoxa::subsystems::tracking::wheel::TrackingWheelMountingDirection::Perpendicular,
                 RotationSensor::new(peripherals.port_19, Direction::Forward), // TODO: verify this is the right port (was 19)
             )],

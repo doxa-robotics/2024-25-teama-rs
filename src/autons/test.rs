@@ -8,10 +8,11 @@ use crate::{
 };
 
 async fn route(robot: &mut Robot) {
-    loop {
-        log::debug!("{:?}", robot.tracking.borrow().pose());
-        sleep(Duration::from_millis(100)).await;
-    }
+    robot.tracking.borrow_mut().set_pose((0.0, 0.0, 0.0).into());
+    // loop {
+    //     log::debug!("{:?}", robot.tracking.borrow().pose());
+    //     sleep(Duration::from_millis(100)).await;
+    // }
     return;
     robot
         .drivetrain

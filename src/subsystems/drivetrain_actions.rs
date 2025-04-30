@@ -11,11 +11,11 @@ pub const TILES_TO_MM: f64 = 600.0;
 pub const CONFIG: ActionConfig = ActionConfig {
     linear_kp: 0.1,
     linear_kp_limit: f64::MAX,
-    linear_ki: 0.00001,
+    linear_ki: 0.0001,
     linear_ki_limit: 0.6,
     linear_kd: 0.2,
     linear_kd_limit: f64::MAX,
-    linear_limit: Motor::V5_MAX_VOLTAGE * 0.67,
+    linear_limit: Motor::V5_MAX_VOLTAGE * 0.6,
     turn_kp: 35.0,
     turn_kp_limit: f64::MAX,
     turn_ki: 0.001,
