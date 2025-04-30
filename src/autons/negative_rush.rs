@@ -12,7 +12,7 @@ use crate::{
 };
 
 async fn route(robot: &mut Robot) {
-    //Starting position
+    // Starting position
     robot
         .tracking
         .borrow_mut()
