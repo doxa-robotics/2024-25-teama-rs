@@ -86,7 +86,7 @@ pub fn smooth_to_point(
     start_easing: f64,
     end_easing: f64,
     reverse: bool,
-    disable_seeking: bool,
+    disable_seeking_distance: Option<f64>,
     config: ActionConfig,
 ) -> impl libdoxa::subsystems::drivetrain::actions::Action {
     libdoxa::subsystems::drivetrain::actions::LazyAction::new(move |current_pose| {
@@ -104,7 +104,7 @@ pub fn smooth_to_point(
                 point * TILES_TO_MM,
                 end_easing * TILES_TO_MM,
             ),
-            disable_seeking,
+            disable_seeking_distance,
             config,
         )
     })

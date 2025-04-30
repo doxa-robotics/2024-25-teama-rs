@@ -29,7 +29,7 @@ async fn route(robot: &mut Robot) {
             4.0,
             2.0,
             false,
-            true,
+            Some(400.0),
             CONFIG.with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.7),
         ))
         .await;
