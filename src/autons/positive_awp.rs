@@ -25,14 +25,6 @@ async fn route(robot: &mut Robot) {
     robot
         .lady_brown
         .set_state(crate::subsystems::lady_brown::LadyBrownState::Initial);
-    robot
-        .drivetrain
-        .action(drivetrain_actions::drive_to_point(
-            (1.1, -2.0).into(),
-            true,
-            CONFIG,
-        ))
-        .await;
     let mut clamp = robot.clamp.clone();
     robot
         .drivetrain
@@ -42,7 +34,7 @@ async fn route(robot: &mut Robot) {
             CONFIG, // CONFIG.with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.6),
         ))
         .with_callback(move |pose| {
-            if pose.y() > -1.3 * TILES_TO_MM {
+            if pose.y() > -1.2 * TILES_TO_MM {
                 clamp.extend();
             }
         })
