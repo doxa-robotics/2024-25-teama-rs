@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use libdoxa::subsystems::drivetrain::VoltagePair;
+use libdoxa::subsystems::drivetrain::DrivetrainPair;
 use snafu::Snafu;
 use vexide::prelude::*;
 
@@ -38,9 +38,10 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         let left_percent = (speed + turn).clamp(-1.0, 1.0);
         let right_percent = (speed - turn).clamp(-1.0, 1.0);
 
-        robot.drivetrain.set_voltage(VoltagePair {
+        robot.drivetrain.set_voltage(DrivetrainPair {
             left: Motor::V5_MAX_VOLTAGE * left_percent,
             right: Motor::V5_MAX_VOLTAGE * right_percent,
+            units: libdoxa::subsystems::drivetrain::drivetrain_pair::DrivetrainUnits::RPM,
         });
 
         if state.button_r1.is_now_pressed() {

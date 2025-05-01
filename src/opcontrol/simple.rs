@@ -41,6 +41,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
         robot.drivetrain.set_voltage(VoltagePair {
             left: Motor::V5_MAX_VOLTAGE * left_percent,
             right: Motor::V5_MAX_VOLTAGE * right_percent,
+            units: libdoxa::subsystems::drivetrain::drivetrain_pair::DrivetrainUnits::RPM,
         });
 
         if state.button_a.is_now_pressed() {
