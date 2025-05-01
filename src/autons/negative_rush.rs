@@ -24,13 +24,15 @@ async fn route(robot: &mut Robot) {
     robot.intake.partial_intake();
     robot
         .drivetrain
-        .action(drivetrain_actions::smooth_to_point(
-            (-2.0, -0.3, 0.0).into(),
-            3.0,
-            3.0,
+        .action(drivetrain_actions::drive_to_point(
+            (-2.7, -0.5).into(),
             false,
-            Some(510.0),
-            CONFIG.with_linear_limit(300.0),
+            CONFIG
+                .with_linear_error_tolerance(200.0)
+                .with_linear_velocity_tolerance(400.0)
+                .with_linear_tolerance_duration(Duration::ZERO)
+                .with_turn_error_tolerance(0.4)
+                .with_turn_velocity_tolerance(200.0),
         ))
         .await;
     robot.doinker.non_dominant().retract();

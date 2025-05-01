@@ -30,7 +30,7 @@ pub const CONFIG: ActionConfig = ActionConfig {
     pursuit_turn_kd: 300.0,
     pursuit_turn_kd_limit: f64::MAX,
     pursuit_turn_limit: 450.0,
-    pursuit_lookahead: 500.0,
+    pursuit_lookahead: 200.0,
     linear_error_tolerance: 15.0,
     linear_velocity_tolerance: 200.0,
     linear_tolerance_duration: Duration::from_millis(30),
