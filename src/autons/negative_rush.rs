@@ -7,7 +7,7 @@ use vexide::{
 };
 
 use crate::{
-    subsystems::drivetrain_actions::{self, CONFIG},
+    subsystems::drivetrain_actions::{self, CONFIG, TILES_TO_MM},
     Robot,
 };
 
@@ -25,36 +25,36 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::smooth_to_point(
-            (-2.3, -0.6, 1.0).into(),
-            4.0,
-            2.0,
+            (-2.0, -0.3, 0.0).into(),
+            3.0,
+            3.0,
             false,
-            Some(400.0),
-            CONFIG.with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.7),
+            Some(510.0),
+            CONFIG.with_linear_limit(300.0),
         ))
         .await;
     robot.doinker.non_dominant().retract();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (-1.5, -0.7).into(),
+            (-1.6, -0.4).into(),
             false,
             CONFIG,
         ))
         .await;
-    let mut clamp_clone = robot.clamp.clone();
-    spawn(async move {
-        sleep(Duration::from_millis(2000)).await;
-        clamp_clone.extend();
-    })
-    .detach();
+    let mut clamp = robot.clamp.clone();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (-0.5, -1.5).into(),
+            (-0.9, -1.1).into(),
             true,
             CONFIG,
         ))
+        .with_callback(move |pose| {
+            if pose.x() > -1.3 * TILES_TO_MM {
+                clamp.extend();
+            }
+        })
         .await;
     robot.clamp.extend();
     robot.intake.run(Direction::Forward);
@@ -76,6 +76,7 @@ async fn route(robot: &mut Robot) {
             CONFIG,
         ))
         .await;
+    robot.intake_raiser.retract();
 }
 
 pub async fn blue(robot: &mut Robot) {
