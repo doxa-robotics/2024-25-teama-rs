@@ -22,10 +22,12 @@ use libdoxa::{
 use log::{error, info};
 use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp, Doinker, IntakeRaiser};
 use utils::logger;
-use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO, sync::Mutex};
+use vexide::{
+    prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO, sync::Mutex, time::Instant,
+};
 use vexide_motorgroup::MotorGroup;
 
-const DRIVETRAIN_CIRCUMFERENCE: f64 = 165.0;
+const DRIVETRAIN_CIRCUMFERENCE: f64 = 164.0;
 
 struct Robot {
     controller: Rc<RefCell<Controller>>,
@@ -55,7 +57,7 @@ impl SelectCompete for Robot {
     }
 
     async fn before_route(&mut self) {
-        // self.drivetrain.set_max_voltage(Motor::V5_MAX_VOLTAGE * 0.6);
+        // self.drivetrain.set_max_voltage(Motor::V5_MAX_VOLTAGE * 0.7);
         info!("Auton start");
     }
 
@@ -126,6 +128,7 @@ async fn main(peripherals: Peripherals) {
             DRIVETRAIN_CIRCUMFERENCE,
             Motor::V5_MAX_VOLTAGE,
             tracking.clone(),
+            3000.0,
         ),
         tracking: tracking.clone(),
 
@@ -163,8 +166,10 @@ async fn main(peripherals: Peripherals) {
         while inertial.borrow().is_calibrating().unwrap() {
             vexide::time::sleep(Duration::from_millis(100)).await;
         }
-        autons::negative_middle::red(&mut robot).await;
+        let start = Instant::now();
+        autons::positive_awp::red(&mut robot).await;
         // autons::test::red(&mut robot).await;
+        log::info!("Auton finished in {:?}", start.elapsed());
     }
     robot
         .compete(ControllerSelect::new(
