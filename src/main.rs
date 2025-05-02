@@ -62,7 +62,7 @@ impl SelectCompete for Robot {
     }
 
     async fn after_route(&mut self) {
-        // self.drivetrain.set_max_voltage(Motor::V5_MAX_VOLTAGE);
+        self.drivetrain.set_max_voltage(Motor::V5_MAX_VOLTAGE);
         info!("Auton end");
     }
 }
@@ -167,7 +167,7 @@ async fn main(peripherals: Peripherals) {
             vexide::time::sleep(Duration::from_millis(100)).await;
         }
         let start = Instant::now();
-        autons::negative_rush::red(&mut robot).await;
+        autons::positive_rush::red(&mut robot).await;
         // autons::test::red(&mut robot).await;
         log::info!("Auton finished in {:?}", start.elapsed());
     }
