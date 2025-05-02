@@ -21,6 +21,20 @@ async fn route(robot: &mut Robot) {
     robot.doinker.non_dominant().extend();
     // robot.intake_raiser.extend();
 
+    robot
+        .drivetrain
+        .action(drivetrain_actions::drive_to_point(
+            (2.0, -1.5).into(),
+            false,
+            CONFIG
+                .with_turn_tolerance_duration(core::time::Duration::ZERO)
+                .with_turn_error_tolerance(1.0)
+                .with_turn_velocity_tolerance(200.0)
+                .with_linear_error_tolerance(300.0)
+                .with_linear_velocity_tolerance(800.0)
+                .with_linear_tolerance_duration(core::time::Duration::ZERO),
+        ))
+        .await;
     let mut intake_raiser = robot.intake_raiser.clone();
     let intake = robot.intake.clone();
     let mut flag_1 = false;
@@ -34,8 +48,9 @@ async fn route(robot: &mut Robot) {
             false,
             CONFIG
                 .with_turn_tolerance_duration(core::time::Duration::ZERO)
-                .with_turn_error_tolerance(0.1)
-                .with_turn_velocity_tolerance(200.0),
+                .with_turn_error_tolerance(1.0)
+                .with_turn_velocity_tolerance(200.0)
+                .with_linear_error_tolerance(50.0),
         ))
         .with_callback(move |pose| {
             if pose.y() > -1.0 * crate::subsystems::drivetrain_actions::TILES_TO_MM && !flag_1 {
@@ -73,7 +88,9 @@ async fn route(robot: &mut Robot) {
         .action(drivetrain_actions::drive_to_point(
             (1.0, -0.9).into(),
             true,
-            CONFIG,
+            CONFIG
+                .with_linear_error_tolerance(100.0)
+                .with_linear_velocity_tolerance(200.0),
         ))
         .with_callback(move |pose| {
             if pose.x() < 1.2 * crate::subsystems::drivetrain_actions::TILES_TO_MM {
