@@ -33,11 +33,11 @@ pub const CONFIG: ActionConfig = ActionConfig {
     pursuit_lookahead: 200.0,
     linear_error_tolerance: 15.0,
     linear_velocity_tolerance: 200.0,
-    linear_tolerance_duration: Duration::from_millis(30),
+    linear_tolerance_duration: Duration::from_millis(0),
     linear_timeout: Duration::from_millis(2000),
     turn_error_tolerance: 0.1,
     turn_velocity_tolerance: 200.0,
-    turn_tolerance_duration: Duration::from_millis(30),
+    turn_tolerance_duration: Duration::from_millis(0),
     turn_timeout: Duration::from_millis(1000),
 };
 

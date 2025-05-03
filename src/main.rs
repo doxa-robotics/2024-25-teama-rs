@@ -167,7 +167,7 @@ async fn main(peripherals: Peripherals) {
             vexide::time::sleep(Duration::from_millis(100)).await;
         }
         let start = Instant::now();
-        autons::positive_rush::red(&mut robot).await;
+        autons::negative_middle::red(&mut robot).await;
         // autons::test::red(&mut robot).await;
         log::info!("Auton finished in {:?}", start.elapsed());
     }

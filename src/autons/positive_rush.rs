@@ -76,7 +76,8 @@ async fn route(robot: &mut Robot) {
             true,
             CONFIG
                 .with_linear_error_tolerance(100.0)
-                .with_linear_velocity_tolerance(200.0),
+                .with_linear_velocity_tolerance(300.0)
+                .with_linear_tolerance_duration(Duration::ZERO),
         ))
         .with_callback(move |pose| {
             if pose.x() < 1.2 * crate::subsystems::drivetrain_actions::TILES_TO_MM {
@@ -120,15 +121,34 @@ async fn route(robot: &mut Robot) {
 
     // Corner ring
     sleep(Duration::from_millis(300)).await;
+    robot.intake.run(vexide::prelude::Direction::Reverse);
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
             (2.8, -2.8).into(),
             false,
-            CONFIG,
+            CONFIG
+                .with_linear_error_tolerance(200.0)
+                .with_linear_velocity_tolerance(100.0)
+                .with_linear_tolerance_duration(Duration::ZERO),
         ))
         .await;
-    robot.intake_raiser.retract();
+    robot.intake.run(vexide::prelude::Direction::Forward);
+    sleep(Duration::from_millis(500)).await;
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(
+            -0.2,
+            CONFIG
+                .with_linear_error_tolerance(50.0)
+                .with_linear_velocity_tolerance(600.0)
+                .with_linear_tolerance_duration(Duration::ZERO),
+        ))
+        .await;
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(0.2, CONFIG))
+        .await;
 }
 
 pub async fn blue(robot: &mut Robot) {
