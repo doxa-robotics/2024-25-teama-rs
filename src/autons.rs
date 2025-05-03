@@ -2,6 +2,7 @@ use core::fmt::Display;
 
 pub mod negative_middle;
 pub mod negative_rush;
+pub mod negative_safe;
 pub mod positive_awp;
 pub mod positive_rush;
 pub mod test;
