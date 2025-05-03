@@ -31,7 +31,9 @@ async fn route(robot: &mut Robot) {
         .action(drivetrain_actions::drive_to_point(
             (1.15, -0.8).into(),
             true,
-            CONFIG, // CONFIG.with_linear_limit(Motor::V5_MAX_VOLTAGE * 0.6),
+            CONFIG
+                .with_linear_error_tolerance(200.0)
+                .with_linear_velocity_tolerance(600.0),
         ))
         .with_callback(move |pose| {
             if pose.y() > -1.1 * TILES_TO_MM {
@@ -47,7 +49,9 @@ async fn route(robot: &mut Robot) {
         .action(drivetrain_actions::drive_to_point(
             (2.1, -1.0).into(),
             false,
-            CONFIG.with_linear_error_tolerance(100.0),
+            CONFIG
+                .with_linear_error_tolerance(200.0)
+                .with_linear_velocity_tolerance(600.0),
         ))
         .await;
     sleep(Duration::from_millis(200)).await;
@@ -59,7 +63,9 @@ async fn route(robot: &mut Robot) {
         .action(drivetrain_actions::drive_to_point(
             (-0.2, -1.9).into(),
             false,
-            CONFIG.with_linear_error_tolerance(50.0),
+            CONFIG
+                .with_linear_error_tolerance(200.0)
+                .with_linear_velocity_tolerance(600.0),
         ))
         .with_callback(move |pose| {
             if pose.x() < 0.2 * TILES_TO_MM {
@@ -74,12 +80,12 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (-0.1, -1.4).into(),
+            (-0.2, -1.0).into(),
             false,
             CONFIG
                 .with_turn_error_tolerance(0.1)
-                .with_linear_velocity_tolerance(100.0)
-                .with_linear_error_tolerance(200.0),
+                .with_linear_velocity_tolerance(500.0)
+                .with_linear_error_tolerance(100.0),
         ))
         .await;
     robot
