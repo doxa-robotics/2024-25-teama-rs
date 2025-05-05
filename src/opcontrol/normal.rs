@@ -25,6 +25,7 @@ pub enum OpcontrolError {}
 
 pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
     robot.intake.stop();
+    let intake_accept = robot.intake.accept();
     loop {
         if *robot.is_selecting.borrow() {
             sleep(Duration::from_millis(10)).await;
@@ -100,6 +101,14 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
 
         if state.button_b.is_now_pressed() {
             robot.clamp.toggle();
+        }
+
+        if state.button_r2.is_now_pressed() {
+            if robot.intake.accept().is_none() {
+                robot.intake.set_accept(intake_accept);
+            } else {
+                robot.intake.set_accept(None);
+            }
         }
 
         // Macros
