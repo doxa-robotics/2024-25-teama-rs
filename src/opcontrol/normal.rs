@@ -128,6 +128,13 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             })
             .detach();
         }
+        if state.button_right.is_now_pressed() {
+            robot
+                .drivetrain
+                .set_max_voltage(Motor::V5_MAX_VOLTAGE * 0.6);
+        } else if state.button_right.is_now_released() {
+            robot.drivetrain.set_max_voltage(Motor::V5_MAX_VOLTAGE);
+        }
 
         sleep(Duration::from_millis(10)).await;
     }
