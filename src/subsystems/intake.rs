@@ -14,8 +14,6 @@ use vexide::{
     time::Instant,
 };
 
-const RED_SIGNATURE: u8 = 1;
-const BLUE_SIGNATURE: u8 = 2;
 const JAM_CURRENT: f64 = 2.6;
 const JAM_OVERCURRENT_TIME: Duration = Duration::from_millis(1000);
 const JAM_REVERSE_TIME: Duration = Duration::from_millis(500);
@@ -31,10 +29,37 @@ pub enum RingColor {
 }
 
 impl RingColor {
-    fn signature(&self) -> u8 {
+    const fn signatures(&self) -> &[(u8, VisionSignature)] {
         match self {
-            RingColor::Red => RED_SIGNATURE,
-            RingColor::Blue => BLUE_SIGNATURE,
+            RingColor::Red => &[
+                (
+                    1,
+                    VisionSignature {
+                        range: 2.5,
+                        u_threshold: (10027, 10981, 10504),
+                        v_threshold: (-1707, -1307, -1507),
+                        flags: 0,
+                    },
+                ),
+                (
+                    2,
+                    VisionSignature {
+                        range: 1.0,
+                        u_threshold: (4681, 10923, 7802),
+                        v_threshold: (-3059, -1129, -2094),
+                        flags: 0,
+                    },
+                ),
+            ],
+            RingColor::Blue => &[(
+                3,
+                VisionSignature {
+                    range: 2.5,
+                    u_threshold: (-4539, -3981, -4260),
+                    v_threshold: (6895, 8859, 7877),
+                    flags: 0,
+                },
+            )],
         }
     }
 }
@@ -92,30 +117,17 @@ impl Intake {
             .set_mode(VisionMode::ColorDetection)
             .expect("failed to set vision mode");
         vision
-            .set_brightness(0.5)
+            .set_brightness(1.0)
             .expect("failed to set vision brightness");
-        vision
-            .set_signature(
-                RingColor::Red.signature(),
-                VisionSignature {
-                    range: 2.5,
-                    u_threshold: (10027, 10981, 10504),
-                    v_threshold: (-1707, -1307, -1507),
-                    flags: 0,
-                },
-            )
-            .expect("failed to initialize vision red signature");
-        vision
-            .set_signature(
-                RingColor::Blue.signature(),
-                VisionSignature {
-                    range: 2.5,
-                    u_threshold: (-4539, -3981, -4260),
-                    v_threshold: (6895, 8859, 7877),
-                    flags: 0,
-                },
-            )
-            .expect("failed to initialize vision blue signature");
+        for (id, signature) in RingColor::Red
+            .signatures()
+            .iter()
+            .chain(RingColor::Blue.signatures())
+        {
+            vision
+                .set_signature(*id, *signature)
+                .expect("failed to initialize vision signature");
+        }
         let mut line_tracker_zero = line_tracker
             .reflectivity()
             .expect("couldn't zero the line tracker");
@@ -223,22 +235,34 @@ impl Intake {
                 } else {
                     motor.set_voltage(motor.max_voltage()).context(MotorSnafu)?;
                 }
-                if let Ok(objects) = vision.objects() {
-                    for object in objects {
-                        if let DetectionSource::Signature(id) = object.source {
-                            match id {
-                                RED_SIGNATURE => {
-                                    *current_ring = Some(RingColor::Red);
+                if let Some(time) = reject_time
+                    && time.elapsed() > RING_REJECT_RESTART_TIME
+                {
+                    *reject_time = None;
+                }
+                match vision.objects() {
+                    Ok(objects) => {
+                        for object in objects {
+                            if let DetectionSource::Signature(id) = object.source {
+                                for (signature_id, ..) in RingColor::Red.signatures() {
+                                    if id == *signature_id {
+                                        *current_ring = Some(RingColor::Red);
+                                        break;
+                                    }
                                 }
-                                BLUE_SIGNATURE => {
-                                    *current_ring = Some(RingColor::Blue);
+                                for (signature_id, ..) in RingColor::Blue.signatures() {
+                                    if id == *signature_id {
+                                        *current_ring = Some(RingColor::Blue);
+                                        break;
+                                    }
                                 }
-                                _ => {}
+                                log::trace!("intake vision detected ring: {:?}", id);
                             }
                         }
                     }
-                } else {
-                    log::warn!("failed to get vision detections");
+                    Err(err) => {
+                        log::warn!("failed to get vision detections: {}", err);
+                    }
                 }
                 if let Some(accept_color) = state.accept {
                     if reject_time.is_none()
