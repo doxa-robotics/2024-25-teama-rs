@@ -20,6 +20,7 @@ const JAM_REVERSE_TIME: Duration = Duration::from_millis(500);
 const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(100);
 const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(300);
 const LINE_TRACKER_THRESHOLD: f64 = 0.2;
+const RPM: i32 = 600;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(unused)]
@@ -33,33 +34,44 @@ impl RingColor {
         match self {
             RingColor::Red => &[
                 (
-                    1,
+                    3,
                     VisionSignature {
                         range: 2.5,
-                        u_threshold: (10027, 10981, 10504),
-                        v_threshold: (-1707, -1307, -1507),
+                        u_threshold: (10785, 11829, 11307),
+                        v_threshold: (-1813, -961, -1387),
                         flags: 0,
                     },
                 ),
                 (
                     2,
                     VisionSignature {
-                        range: 1.0,
+                        range: 1.1,
                         u_threshold: (4681, 10923, 7802),
                         v_threshold: (-3059, -1129, -2094),
                         flags: 0,
                     },
                 ),
             ],
-            RingColor::Blue => &[(
-                3,
-                VisionSignature {
-                    range: 2.5,
-                    u_threshold: (-4539, -3981, -4260),
-                    v_threshold: (6895, 8859, 7877),
-                    flags: 0,
-                },
-            )],
+            RingColor::Blue => &[
+                (
+                    4,
+                    VisionSignature {
+                        range: 2.5,
+                        u_threshold: (-4539, -3981, -4260),
+                        v_threshold: (6895, 8859, 7877),
+                        flags: 0,
+                    },
+                ),
+                (
+                    1,
+                    VisionSignature {
+                        range: 2.5,
+                        u_threshold: (-3859, -2711, -3285),
+                        v_threshold: (3375, 8813, 6094),
+                        flags: 0,
+                    },
+                ),
+            ],
         }
     }
 }
@@ -114,15 +126,15 @@ impl Intake {
         mut line_tracker: AdiLineTracker,
     ) -> Self {
         vision
-            .set_mode(VisionMode::ColorDetection)
+            .set_mode(VisionMode::MixedDetection)
             .expect("failed to set vision mode");
         vision
-            .set_brightness(1.0)
+            .set_brightness(1.2)
             .expect("failed to set vision brightness");
-        for (id, signature) in RingColor::Red
+        for (id, signature) in RingColor::Blue
             .signatures()
             .iter()
-            .chain(RingColor::Blue.signatures())
+            .chain(RingColor::Red.signatures())
         {
             vision
                 .set_signature(*id, *signature)
@@ -229,11 +241,9 @@ impl Intake {
                 {
                     motor.brake(BrakeMode::Brake).context(MotorSnafu)?;
                 } else if jam_time.is_some() {
-                    motor
-                        .set_voltage(-motor.max_voltage())
-                        .context(MotorSnafu)?;
+                    motor.set_velocity(-RPM).context(MotorSnafu)?;
                 } else {
-                    motor.set_voltage(motor.max_voltage()).context(MotorSnafu)?;
+                    motor.set_velocity(RPM).context(MotorSnafu)?;
                 }
                 if let Some(time) = reject_time
                     && time.elapsed() > RING_REJECT_RESTART_TIME
@@ -243,20 +253,23 @@ impl Intake {
                 match vision.objects() {
                     Ok(objects) => {
                         for object in objects {
+                            log::debug!("intake vision detected object: {:?}", object);
                             if let DetectionSource::Signature(id) = object.source {
+                                if object.width <= 10 {
+                                    log::debug!("intake vision detected small object");
+                                    continue;
+                                }
+                                log::debug!("intake vision detected ring: {:?}", id);
                                 for (signature_id, ..) in RingColor::Red.signatures() {
                                     if id == *signature_id {
                                         *current_ring = Some(RingColor::Red);
-                                        break;
                                     }
                                 }
                                 for (signature_id, ..) in RingColor::Blue.signatures() {
                                     if id == *signature_id {
                                         *current_ring = Some(RingColor::Blue);
-                                        break;
                                     }
                                 }
-                                log::trace!("intake vision detected ring: {:?}", id);
                             }
                         }
                     }
@@ -280,16 +293,14 @@ impl Intake {
                 if line_tracker.reflectivity().unwrap_or(0.0)
                     < line_tracker_zero + LINE_TRACKER_THRESHOLD
                 {
-                    motor.set_voltage(motor.max_voltage()).context(MotorSnafu)?;
+                    motor.set_velocity(RPM).context(MotorSnafu)?;
                 } else {
                     state.state = IntakeState::Stop;
                     motor.brake(BrakeMode::Brake).context(MotorSnafu)?;
                 }
             }
             IntakeState::Reverse => {
-                motor
-                    .set_voltage(-motor.max_voltage())
-                    .context(MotorSnafu)?;
+                motor.set_velocity(-RPM).context(MotorSnafu)?;
             }
             IntakeState::Stop => {
                 motor.brake(BrakeMode::Coast).context(MotorSnafu)?;
