@@ -581,10 +581,12 @@ dependencies = [
  "autons",
  "autons-controller",
  "colorsys",
+ "embedded-graphics",
  "libdoxa",
  "log",
  "pid",
  "snafu",
+ "tinybmp",
  "vexide",
  "vexide-motorgroup",
 ]

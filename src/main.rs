@@ -6,6 +6,7 @@
 extern crate alloc;
 
 mod autons;
+mod graphics;
 mod opcontrol;
 mod subsystems;
 mod utils;
@@ -151,9 +152,6 @@ async fn main(peripherals: Peripherals) {
         .expect("failed to initialize arm"),
     };
 
-    let mut debug_render = DebugRender::new(peripherals.display);
-    debug_render.render();
-
     info!("entering competing");
     let controller = robot.controller.clone();
     let is_selecting = robot.is_selecting.clone();
@@ -162,6 +160,9 @@ async fn main(peripherals: Peripherals) {
 
     #[cfg(feature = "no_selector")]
     {
+        let mut debug_render = DebugRender::new(peripherals.display);
+        debug_render.render();
+
         log::info!("No selector feature enabled, running autonomously after inertial calibration");
         while inertial.borrow().is_calibrating().unwrap() {
             vexide::time::sleep(Duration::from_millis(100)).await;
@@ -173,6 +174,10 @@ async fn main(peripherals: Peripherals) {
         autons::negative_safe::red(&mut robot).await;
         // autons::test::red(&mut robot).await;
         log::info!("Auton finished in {:?}", start.elapsed());
+    }
+    #[cfg(not(feature = "no_selector"))]
+    {
+        graphics::render_banner(peripherals.display);
     }
     robot
         .compete(ControllerSelect::new(
