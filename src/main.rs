@@ -137,6 +137,7 @@ async fn main(peripherals: Peripherals) {
             Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
             VisionSensor::new(peripherals.port_11),
             AdiLineTracker::new(peripherals.adi_g),
+            OpticalSensor::new(peripherals.port_15),
         ),
 
         clamp: Clamp::new([AdiDigitalOut::new(peripherals.adi_b)]),

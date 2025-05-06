@@ -8,8 +8,8 @@ use vexide::{
     devices::smart::{motor::MotorError, vision::DetectionSource},
     float::Float as _,
     prelude::{
-        sleep, spawn, AdiLineTracker, BrakeMode, Direction, Motor, VisionMode, VisionSensor,
-        VisionSignature,
+        sleep, spawn, AdiLineTracker, BrakeMode, Direction, Motor, OpticalSensor, VisionMode,
+        VisionSensor, VisionSignature,
     },
     time::Instant,
 };
@@ -125,7 +125,11 @@ impl Intake {
         mut motor: Motor,
         mut vision: VisionSensor,
         mut line_tracker: AdiLineTracker,
+        mut optical: OpticalSensor,
     ) -> Self {
+        optical
+            .set_led_brightness(0.8)
+            .expect("could not set optical sensor brightness");
         vision
             .set_mode(VisionMode::MixedDetection)
             .expect("failed to set vision mode");
@@ -172,6 +176,7 @@ impl Intake {
                                 &mut vision,
                                 &mut line_tracker,
                                 line_tracker_zero,
+                                &mut optical,
                                 &mut state,
                             ) {
                                 error!("intake update error: {}", err);
@@ -205,6 +210,7 @@ impl Intake {
         vision: &mut VisionSensor,
         line_tracker: &mut AdiLineTracker,
         line_tracker_zero: f64,
+        optical: &mut OpticalSensor,
         state: &mut IntakeInner,
     ) -> Result<(), IntakeError> {
         match &mut state.state {
@@ -283,6 +289,16 @@ impl Intake {
                     if time.elapsed() > Duration::from_millis(800) {
                         *current_ring = Some(RingColor::Blue);
                         *red_time = None;
+                    }
+                }
+                if let Ok(hue) = optical.hue()
+                    && let Ok(proximity) = optical.proximity()
+                    && proximity > 0.5
+                {
+                    match hue as u32 {
+                        350..=360 | 0..=20 => *current_ring = Some(RingColor::Red),
+                        210..=230 => *current_ring = Some(RingColor::Blue),
+                        _ => {}
                     }
                 }
                 if let Some(accept_color) = state.accept {
