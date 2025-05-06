@@ -136,6 +136,16 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             robot.drivetrain.set_max_voltage(Motor::V5_MAX_VOLTAGE);
         }
 
+        _ = robot.controller.borrow_mut().screen.try_set_text(
+            if robot.intake.accept().is_some() {
+                "Intake: Accepting         "
+            } else {
+                "Intake: Rejecting         "
+            },
+            1,
+            1,
+        );
+
         sleep(Duration::from_millis(10)).await;
     }
 }
