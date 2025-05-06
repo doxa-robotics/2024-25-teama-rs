@@ -151,6 +151,7 @@ async fn route(robot: &mut Robot) {
         .drivetrain
         .action(drivetrain_actions::forward(0.2, CONFIG))
         .await;
+    sleep(Duration::from_millis(1000)).await;
 }
 
 pub async fn blue(robot: &mut Robot) {
