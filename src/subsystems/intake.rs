@@ -36,7 +36,7 @@ impl RingColor {
                 (
                     3,
                     VisionSignature {
-                        range: 2.5,
+                        range: 4.5,
                         u_threshold: (10785, 11829, 11307),
                         v_threshold: (-1813, -961, -1387),
                         flags: 0,
@@ -91,6 +91,7 @@ impl Not for RingColor {
 pub enum IntakeState {
     Forward {
         current_ring: Option<RingColor>,
+        red_time: Option<Instant>,
         reject_time: Option<Instant>,
         jam_time: Option<Instant>,
         overcurrent_time: Option<Instant>,
@@ -212,6 +213,7 @@ impl Intake {
                 ref mut jam_time,
                 ref mut overcurrent_time,
                 ref mut current_ring,
+                ref mut red_time,
             } => {
                 if let Ok(current) = motor.current() {
                     if current > JAM_CURRENT {
@@ -253,16 +255,16 @@ impl Intake {
                 match vision.objects() {
                     Ok(objects) => {
                         for object in objects {
-                            log::debug!("intake vision detected object: {:?}", object);
                             if let DetectionSource::Signature(id) = object.source {
                                 if object.width <= 10 {
-                                    log::debug!("intake vision detected small object");
+                                    // log::debug!("intake vision detected small object");
                                     continue;
                                 }
-                                log::debug!("intake vision detected ring: {:?}", id);
+                                // log::debug!("intake vision detected ring: {:?}", id);
                                 for (signature_id, ..) in RingColor::Red.signatures() {
                                     if id == *signature_id {
                                         *current_ring = Some(RingColor::Red);
+                                        *red_time = Some(Instant::now());
                                     }
                                 }
                                 for (signature_id, ..) in RingColor::Blue.signatures() {
@@ -275,6 +277,12 @@ impl Intake {
                     }
                     Err(err) => {
                         log::warn!("failed to get vision detections: {}", err);
+                    }
+                }
+                if let Some(time) = red_time {
+                    if time.elapsed() > Duration::from_millis(800) {
+                        *current_ring = Some(RingColor::Blue);
+                        *red_time = None;
                     }
                 }
                 if let Some(accept_color) = state.accept {
@@ -330,6 +338,7 @@ impl Intake {
                 jam_time: None,
                 overcurrent_time: None,
                 current_ring: None,
+                red_time: None,
             },
             Direction::Reverse => IntakeState::Reverse,
         };
