@@ -48,6 +48,7 @@ impl SelectCompete for Robot {
     async fn driver(&mut self) {
         self.tracking.borrow_mut().set_reverse(false);
         self.drivetrain.set_max_voltage(Motor::V5_MAX_VOLTAGE);
+        self.intake.set_accept(None);
         info!("Driver starting");
 
         loop {
