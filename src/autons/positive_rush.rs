@@ -6,11 +6,12 @@ use core::{
 use vexide::time::sleep;
 
 use crate::{
-    subsystems::drivetrain_actions::{self, CONFIG},
+    subsystems::drivetrain_actions::{self, CONFIG, TILES_TO_MM},
     Robot,
 };
 
 async fn route(robot: &mut Robot) {
+    sleep(Duration::from_millis(1000)).await;
     // Starting position
     robot
         .tracking
@@ -36,7 +37,8 @@ async fn route(robot: &mut Robot) {
                 .with_turn_tolerance_duration(core::time::Duration::ZERO)
                 .with_turn_error_tolerance(1.0)
                 .with_turn_velocity_tolerance(200.0)
-                .with_linear_error_tolerance(50.0),
+                .with_linear_error_tolerance(50.0)
+                .with_boomerang_lock_distance(2.0 * TILES_TO_MM),
         ))
         .with_callback(move |pose| {
             if pose.y() > -1.0 * crate::subsystems::drivetrain_actions::TILES_TO_MM && !flag_1 {
@@ -93,12 +95,12 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (2.4, -0.4).into(),
+            (2.5, -0.3).into(),
             true,
-            CONFIG.with_linear_error_tolerance(100.0),
+            CONFIG,
         ))
         .with_callback(move |pose| {
-            if pose.x() > 2.2 * crate::subsystems::drivetrain_actions::TILES_TO_MM {
+            if pose.x() > 2.4 * crate::subsystems::drivetrain_actions::TILES_TO_MM {
                 clamp.extend();
             }
         })

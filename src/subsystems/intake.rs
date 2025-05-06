@@ -19,7 +19,7 @@ const JAM_OVERCURRENT_TIME: Duration = Duration::from_millis(1000);
 const JAM_REVERSE_TIME: Duration = Duration::from_millis(500);
 const RING_REJECT_STOP_TIME: Duration = Duration::from_millis(100);
 const RING_REJECT_RESTART_TIME: Duration = Duration::from_millis(300);
-const LINE_TRACKER_THRESHOLD: f64 = 0.2;
+const LINE_TRACKER_THRESHOLD: f64 = 0.1;
 const RPM: i32 = 600;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
