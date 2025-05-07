@@ -14,22 +14,21 @@ async fn route(robot: &mut Robot) {
         .set_pose((-280.0, -1360.0, -0.74).into());
 
     // Alliance score
-    // FIXME: uncomment after Q89
-    // robot
-    //     .drivetrain
-    //     .action(drivetrain_actions::forward(
-    //         0.255,
-    //         CONFIG.with_linear_limit(300.0),
-    //     ))
-    //     .await;
-    // sleep(Duration::from_millis(100)).await;
-    // robot
-    //     .lady_brown
-    //     .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
-    // sleep(Duration::from_millis(700)).await;
-    // robot
-    //     .lady_brown
-    //     .set_state(crate::subsystems::lady_brown::LadyBrownState::Initial);
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(
+            0.255,
+            CONFIG.with_linear_limit(300.0),
+        ))
+        .await;
+    sleep(Duration::from_millis(100)).await;
+    robot
+        .lady_brown
+        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
+    sleep(Duration::from_millis(700)).await;
+    robot
+        .lady_brown
+        .set_state(crate::subsystems::lady_brown::LadyBrownState::Initial);
 
     // Get goal at (1.0, -1.0)
     let mut clamp = robot.clamp.clone();
