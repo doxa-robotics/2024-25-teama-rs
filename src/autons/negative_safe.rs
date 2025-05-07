@@ -39,7 +39,7 @@ async fn route(robot: &mut Robot) {
             true,
             CONFIG
                 .with_linear_error_tolerance(100.0)
-                .with_turn_error_tolerance(0.2),
+                .with_turn_error_tolerance(0.1),
         ))
         .with_callback(move |pose| {
             if pose.y() > -1.1 * TILES_TO_MM {
@@ -77,7 +77,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::forward(
-            -0.4,
+            -0.3,
             CONFIG
                 .with_linear_error_tolerance(100.0)
                 .with_linear_velocity_tolerance(200.0)
@@ -87,18 +87,18 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::forward(
-            0.4,
+            0.3,
             CONFIG.with_linear_error_tolerance(100.0),
         ))
         .await;
-    sleep(Duration::from_millis(1000)).await;
+    sleep(Duration::from_millis(500)).await;
     robot
         .lady_brown
         .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (-0.2, -1.2).into(),
+            (-0.2, -0.9).into(),
             false,
             CONFIG.with_linear_error_tolerance(100.0),
         ))
