@@ -37,7 +37,6 @@ async fn route(robot: &mut Robot) {
                 .with_turn_tolerance_duration(core::time::Duration::ZERO)
                 .with_turn_error_tolerance(1.0)
                 .with_turn_velocity_tolerance(200.0)
-                .with_linear_error_tolerance(50.0)
                 .with_boomerang_lock_distance(2.0 * TILES_TO_MM),
         ))
         .with_callback(move |pose| {
@@ -64,7 +63,7 @@ async fn route(robot: &mut Robot) {
         .drivetrain
         .action(drivetrain_actions::turn_to_point(
             (3.0, -1.0).into(),
-            CONFIG,
+            CONFIG.with_turn_error_tolerance(0.05),
         ))
         .await;
 
@@ -87,21 +86,27 @@ async fn route(robot: &mut Robot) {
             }
         })
         .await;
+    let old_accept = robot.intake.accept();
+    robot.intake.set_accept(None);
     robot.intake.run(vexide::prelude::Direction::Forward);
-    sleep(Duration::from_millis(1000)).await;
+    sleep(Duration::from_millis(200)).await;
+    robot.intake.set_accept(old_accept);
+    robot.intake.run(vexide::prelude::Direction::Forward);
+    sleep(Duration::from_millis(800)).await;
     robot.clamp.retract();
+    robot.intake.stop();
 
     let mut clamp = robot.clamp.clone();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (2.5, -0.2).into(),
+            (2.4, -0.35).into(),
             true,
             CONFIG,
         ))
         .with_callback(move |pose| {
             if pose.x() > 2.4 * crate::subsystems::drivetrain_actions::TILES_TO_MM {
-                clamp.extend();
+                // clamp.extend();
             }
         })
         .await;
@@ -112,7 +117,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (2.4, -2.5).into(),
+            (2.35, -2.7).into(),
             false,
             CONFIG
                 .with_turn_error_tolerance(0.2)
@@ -122,7 +127,7 @@ async fn route(robot: &mut Robot) {
         .await;
 
     // Corner ring
-    sleep(Duration::from_millis(300)).await;
+    sleep(Duration::from_millis(800)).await;
     let intake = robot.intake.clone();
     robot
         .drivetrain
@@ -145,16 +150,16 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::forward(
-            -0.2,
+            -0.3,
             CONFIG
-                .with_linear_error_tolerance(50.0)
-                .with_linear_velocity_tolerance(600.0)
+                .with_linear_error_tolerance(100.0)
+                .with_linear_velocity_tolerance(200.0)
                 .with_linear_tolerance_duration(Duration::ZERO),
         ))
         .await;
     robot
         .drivetrain
-        .action(drivetrain_actions::forward(0.2, CONFIG))
+        .action(drivetrain_actions::forward(0.3, CONFIG))
         .await;
     sleep(Duration::from_millis(1000)).await;
 }
