@@ -22,7 +22,7 @@ async fn route(robot: &mut Robot) {
     //         CONFIG.with_linear_limit(300.0),
     //     ))
     //     .await;
-    // sleep(Duration::from_micros(100)).await;
+    // sleep(Duration::from_millis(100)).await;
     // robot
     //     .lady_brown
     //     .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
