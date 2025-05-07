@@ -103,7 +103,7 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             robot.clamp.toggle();
         }
 
-        if state.button_r2.is_now_pressed() {
+        if state.button_right.is_now_pressed() {
             if robot.intake.accept().is_none() {
                 robot.intake.set_accept(intake_accept);
             } else {
@@ -128,11 +128,11 @@ pub async fn opcontrol(robot: &mut Robot) -> Result<!, OpcontrolError> {
             })
             .detach();
         }
-        if state.button_right.is_now_pressed() {
+        if state.button_r2.is_now_pressed() {
             robot
                 .drivetrain
-                .set_max_voltage(Motor::V5_MAX_VOLTAGE * 0.6);
-        } else if state.button_right.is_now_released() {
+                .set_max_voltage(Motor::V5_MAX_VOLTAGE * 0.8);
+        } else if state.button_r2.is_now_released() {
             robot.drivetrain.set_max_voltage(Motor::V5_MAX_VOLTAGE);
         }
 

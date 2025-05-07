@@ -11,12 +11,15 @@ async fn route(robot: &mut Robot) {
     robot
         .tracking
         .borrow_mut()
-        .set_pose((360.0, -1400.0, 0.74 - PI).into());
+        .set_pose((280.0, -1360.0, 0.74 - PI).into());
 
     // Alliance score
     robot
         .drivetrain
-        .action(drivetrain_actions::forward(0.24, CONFIG))
+        .action(drivetrain_actions::forward(
+            0.255,
+            CONFIG.with_linear_limit(300.0),
+        ))
         .await;
     robot
         .lady_brown
@@ -78,21 +81,20 @@ async fn route(robot: &mut Robot) {
 
     // Drive to bar touch
     robot
+        .lady_brown
+        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
+    robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (-0.2, -1.0).into(),
+            (0.8, 0.4).into(),
             false,
             CONFIG
                 .with_turn_error_tolerance(0.1)
                 .with_linear_velocity_tolerance(500.0)
+                .with_linear_limit(400.0)
                 .with_linear_error_tolerance(100.0),
         ))
         .await;
-    robot
-        .lady_brown
-        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
-
-    // TODO: touch
 }
 
 pub async fn blue(robot: &mut Robot) {

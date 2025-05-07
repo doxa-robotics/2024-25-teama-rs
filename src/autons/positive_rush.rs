@@ -49,7 +49,7 @@ async fn route(robot: &mut Robot) {
                 flag_2 = true;
                 intake_raiser.extend();
             }
-            if pose.y() > -0.502 * crate::subsystems::drivetrain_actions::TILES_TO_MM && !flag_3 {
+            if pose.y() > -0.6 * crate::subsystems::drivetrain_actions::TILES_TO_MM && !flag_3 {
                 flag_3 = true;
                 intake.partial_intake();
             }
@@ -74,7 +74,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (1.0, -0.9).into(),
+            (0.8, -1.1).into(),
             true,
             CONFIG
                 .with_linear_error_tolerance(100.0)
@@ -95,7 +95,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (2.5, -0.3).into(),
+            (2.5, -0.2).into(),
             true,
             CONFIG,
         ))
@@ -123,7 +123,7 @@ async fn route(robot: &mut Robot) {
 
     // Corner ring
     sleep(Duration::from_millis(300)).await;
-    robot.intake.run(vexide::prelude::Direction::Reverse);
+    let intake = robot.intake.clone();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
@@ -134,6 +134,11 @@ async fn route(robot: &mut Robot) {
                 .with_linear_velocity_tolerance(100.0)
                 .with_linear_tolerance_duration(Duration::ZERO),
         ))
+        .with_callback(move |pose| {
+            if pose.x() > 2.6 {
+                intake.run(vexide::prelude::Direction::Reverse);
+            }
+        })
         .await;
     robot.intake.run(vexide::prelude::Direction::Forward);
     sleep(Duration::from_millis(500)).await;

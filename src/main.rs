@@ -173,7 +173,7 @@ async fn main(peripherals: Peripherals) {
             vexide::time::sleep(Duration::from_millis(100)).await;
         }
         let start = Instant::now();
-        autons::positive_rush::blue(&mut robot).await;
+        autons::positive_awp::blue(&mut robot).await;
         // autons::test::red(&mut robot).await;
         log::info!("Auton finished in {:?}", start.elapsed());
     }
@@ -188,6 +188,7 @@ async fn main(peripherals: Peripherals) {
             [
                 route!(AutonCategory::Test, "Test red", autons::test::red),
                 route!(AutonCategory::Test, "Test blue", autons::test::blue),
+                route!(AutonCategory::Test, "Forward", autons::forward::route),
                 route!(
                     AutonCategory::RedNegative,
                     "Negative rush",
