@@ -1,7 +1,4 @@
-use core::{
-    f64::consts::{FRAC_PI_2, FRAC_PI_4},
-    time::Duration,
-};
+use core::{f64::consts::FRAC_PI_2, time::Duration};
 
 use vexide::time::sleep;
 
@@ -31,13 +28,14 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (2.0, -0.5).into(),
+            (2.0, -0.4).into(),
             false,
             CONFIG
                 .with_turn_tolerance_duration(core::time::Duration::ZERO)
                 .with_turn_error_tolerance(1.0)
                 .with_turn_velocity_tolerance(200.0)
-                .with_boomerang_lock_distance(2.0 * TILES_TO_MM),
+                .with_boomerang_lock_distance(2.0 * TILES_TO_MM)
+                .with_linear_limit(400.0),
         ))
         .with_callback(move |pose| {
             if pose.y() > -1.0 * crate::subsystems::drivetrain_actions::TILES_TO_MM && !flag_1 {
@@ -46,7 +44,7 @@ async fn route(robot: &mut Robot) {
             }
             if pose.y() > -2.1 * crate::subsystems::drivetrain_actions::TILES_TO_MM && !flag_2 {
                 flag_2 = true;
-                intake_raiser.extend();
+                // intake_raiser.extend();
             }
             if pose.y() > -0.6 * crate::subsystems::drivetrain_actions::TILES_TO_MM && !flag_3 {
                 flag_3 = true;
@@ -73,7 +71,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (0.8, -1.1).into(),
+            (0.7, -1.2).into(),
             true,
             CONFIG
                 .with_linear_error_tolerance(100.0)
@@ -81,7 +79,7 @@ async fn route(robot: &mut Robot) {
                 .with_linear_tolerance_duration(Duration::ZERO),
         ))
         .with_callback(move |pose| {
-            if pose.x() < 1.2 * crate::subsystems::drivetrain_actions::TILES_TO_MM {
+            if pose.x() < 1.1 * crate::subsystems::drivetrain_actions::TILES_TO_MM {
                 clamp.extend();
             }
         })
@@ -96,13 +94,15 @@ async fn route(robot: &mut Robot) {
     robot.clamp.retract();
     robot.intake.stop();
 
-    let mut clamp = robot.clamp.clone();
+    // let mut clamp = robot.clamp.clone();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (2.4, -0.35).into(),
+            (2.4, -0.25).into(),
             true,
-            CONFIG,
+            CONFIG
+                .with_linear_error_tolerance(100.0)
+                .with_turn_error_tolerance(0.15),
         ))
         .with_callback(move |pose| {
             if pose.x() > 2.4 * crate::subsystems::drivetrain_actions::TILES_TO_MM {
@@ -116,8 +116,18 @@ async fn route(robot: &mut Robot) {
     robot.intake.run(vexide::prelude::Direction::Forward);
     robot
         .drivetrain
+        .action(drivetrain_actions::forward(
+            0.5,
+            CONFIG
+                .with_linear_error_tolerance(200.0)
+                .with_linear_velocity_tolerance(300.0)
+                .with_linear_tolerance_duration(Duration::ZERO),
+        ))
+        .await;
+    robot
+        .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (2.35, -2.7).into(),
+            (2.35, -2.3).into(),
             false,
             CONFIG
                 .with_turn_error_tolerance(0.2)
@@ -127,7 +137,7 @@ async fn route(robot: &mut Robot) {
         .await;
 
     // Corner ring
-    sleep(Duration::from_millis(800)).await;
+    sleep(Duration::from_millis(1000)).await;
     let intake = robot.intake.clone();
     robot
         .drivetrain

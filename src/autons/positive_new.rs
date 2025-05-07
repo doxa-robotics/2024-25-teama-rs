@@ -1,4 +1,7 @@
-use core::{f64::consts::PI, time::Duration};
+use core::{
+    f64::consts::{FRAC_PI_2, PI},
+    time::Duration,
+};
 
 use vexide::time::sleep;
 
@@ -11,29 +14,14 @@ async fn route(robot: &mut Robot) {
     robot
         .tracking
         .borrow_mut()
-        .set_pose((280.0, -1360.0, 0.74 - PI).into());
+        .set_pose((1.0 * TILES_TO_MM, -2.5 * TILES_TO_MM, -FRAC_PI_2).into());
 
-    // Alliance score
-    robot
-        .drivetrain
-        .action(drivetrain_actions::forward(
-            0.255,
-            CONFIG.with_linear_limit(300.0),
-        ))
-        .await;
-    sleep(Duration::from_millis(100)).await;
-    robot
-        .lady_brown
-        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
-    sleep(Duration::from_millis(800)).await;
-    robot
-        .lady_brown
-        .set_state(crate::subsystems::lady_brown::LadyBrownState::Initial);
+    // stake
     let mut clamp = robot.clamp.clone();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (1.15, -0.8).into(),
+            (1.0, -0.8).into(),
             true,
             CONFIG
                 .with_linear_error_tolerance(200.0)
@@ -46,6 +34,7 @@ async fn route(robot: &mut Robot) {
         })
         .await;
     robot.intake.run(vexide::prelude::Direction::Forward);
+    sleep(Duration::from_millis(200)).await;
 
     // Get ring at (2.0, -1.0)
     robot
@@ -65,7 +54,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (-0.2, -1.9).into(),
+            (-0.2, -2.0).into(),
             false,
             CONFIG
                 .with_linear_error_tolerance(200.0)
@@ -87,7 +76,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (0.8, 0.4).into(),
+            (0.0, 0.4).into(),
             false,
             CONFIG
                 .with_turn_error_tolerance(0.1)
