@@ -109,9 +109,12 @@ async fn route(robot: &mut Robot) {
         .await;
 
     // Drive to middle
+    robot.intake.stop(); // to prevent flying ring
     robot
         .lady_brown
         .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
+    let intake = robot.intake.clone();
+    let mut flag = false;
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
@@ -119,6 +122,12 @@ async fn route(robot: &mut Robot) {
             false,
             CONFIG,
         ))
+        .with_callback(move |pose| {
+            if pose.y() > -1.5 * TILES_TO_MM && !flag {
+                flag = true;
+                intake.run(vexide::prelude::Direction::Forward);
+            }
+        })
         .await;
     robot
         .drivetrain
