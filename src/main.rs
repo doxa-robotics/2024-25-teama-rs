@@ -17,10 +17,14 @@ use core::{cell::RefCell, time::Duration};
 use ::autons::prelude::{SelectCompete, SelectCompeteExt};
 use autons::AutonCategory;
 use autons_controller::{route, ControllerSelect};
+#[cfg(feature = "no_selector")]
+use libdoxa::debug_render::DebugRender;
 use libdoxa::{subsystems::tracking::wheel::TrackingWheel, utils::pose::Pose};
 use log::{error, info};
 use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp, Doinker, IntakeRaiser};
 use utils::logger;
+#[cfg(feature = "no_selector")]
+use vexide::time::Instant;
 use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 use vexide_motorgroup::MotorGroup;
 
