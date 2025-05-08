@@ -87,7 +87,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (0.8, 0.4).into(),
+            (0.0, 0.9).into(),
             false,
             CONFIG
                 .with_turn_error_tolerance(0.1)

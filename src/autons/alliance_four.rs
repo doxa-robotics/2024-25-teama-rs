@@ -111,7 +111,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::boomerang_to_point(
-            (2.0, -0.6).into(),
+            (2.0, -1.0).into(),
             CONFIG,
         ))
         .await;

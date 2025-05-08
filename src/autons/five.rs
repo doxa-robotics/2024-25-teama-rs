@@ -90,9 +90,12 @@ async fn route(robot: &mut Robot) {
                 .with_linear_velocity_tolerance(300.0),
         ))
         .await;
+    robot.intake.stop(); // to prevent flying ring
 
     // Get the ring in front of alliance stake
     let mut intake_raiser = robot.intake_raiser.clone();
+    let intake = robot.intake.clone();
+    let mut flag = false;
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
@@ -107,6 +110,10 @@ async fn route(robot: &mut Robot) {
                 intake_raiser.retract();
             } else if pose.x() < 1.5 * TILES_TO_MM {
                 intake_raiser.extend();
+            }
+            if pose.x() < 1.5 * TILES_TO_MM && !flag {
+                flag = true;
+                intake.run(vexide::prelude::Direction::Forward);
             }
         })
         .await;

@@ -123,7 +123,7 @@ async fn route(robot: &mut Robot) {
             CONFIG,
         ))
         .with_callback(move |pose| {
-            if pose.y() > -1.5 * TILES_TO_MM && !flag {
+            if pose.x() < -1.5 * TILES_TO_MM && !flag {
                 flag = true;
                 intake.run(vexide::prelude::Direction::Forward);
             }
