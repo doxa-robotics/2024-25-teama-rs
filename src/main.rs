@@ -11,20 +11,20 @@ mod opcontrol;
 mod subsystems;
 mod utils;
 
-use alloc::{rc::Rc, sync::Arc, vec};
+use alloc::{rc::Rc, vec};
 use core::{cell::RefCell, time::Duration};
 
 use ::autons::prelude::{SelectCompete, SelectCompeteExt};
 use autons::AutonCategory;
 use autons_controller::{route, ControllerSelect};
 use libdoxa::{
-    debug_render::DebugRender, subsystems::tracking::wheel::TrackingWheel, utils::pose::Pose,
+    subsystems::tracking::wheel::TrackingWheel, utils::pose::Pose,
 };
 use log::{error, info};
 use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp, Doinker, IntakeRaiser};
 use utils::logger;
 use vexide::{
-    prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO, sync::Mutex, time::Instant,
+    prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO,
 };
 use vexide_motorgroup::MotorGroup;
 

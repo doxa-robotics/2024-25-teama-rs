@@ -1,10 +1,6 @@
 use core::{f64::consts::FRAC_PI_2, time::Duration};
 
-use vexide::{
-    prelude::{Direction, Motor},
-    task::spawn,
-    time::sleep,
-};
+use vexide::{prelude::Direction, time::sleep};
 
 use crate::{
     subsystems::drivetrain_actions::{self, CONFIG, TILES_TO_MM},

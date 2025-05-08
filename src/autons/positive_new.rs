@@ -1,5 +1,5 @@
 use core::{
-    f64::consts::{FRAC_PI_2, PI},
+    f64::consts::FRAC_PI_2,
     time::Duration,
 };
 

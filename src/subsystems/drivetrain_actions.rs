@@ -4,7 +4,6 @@ use libdoxa::{
     path_planner::cubic_parametric::CubicParametricPath,
     subsystems::drivetrain::actions::config::ActionConfig, utils::pose::Pose,
 };
-use vexide::prelude::Motor;
 
 pub const TILES_TO_MM: f64 = 600.0;
 

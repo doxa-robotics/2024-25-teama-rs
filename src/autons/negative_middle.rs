@@ -1,4 +1,4 @@
-use core::{f64::consts::PI, time::Duration};
+use core::time::Duration;
 
 use vexide::time::sleep;
 
