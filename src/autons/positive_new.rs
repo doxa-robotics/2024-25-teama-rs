@@ -49,16 +49,61 @@ async fn route(robot: &mut Robot) {
         .await;
     sleep(Duration::from_millis(200)).await;
 
+    // Corner
+    let intake = robot.intake.clone();
+    robot
+        .drivetrain
+        .action(drivetrain_actions::drive_to_point(
+            (2.7, -2.7).into(),
+            false,
+            CONFIG.with_linear_error_tolerance(100.0),
+        ))
+        .with_callback(move |pose| {
+            if pose.y() < -2.0 * TILES_TO_MM {
+                intake.run(vexide::prelude::Direction::Reverse);
+            }
+        })
+        .await;
+    robot.intake.run(vexide::prelude::Direction::Forward);
+    sleep(Duration::from_millis(400)).await;
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(
+            -0.3,
+            CONFIG
+                .with_linear_error_tolerance(100.0)
+                .with_linear_velocity_tolerance(200.0)
+                .with_linear_tolerance_duration(Duration::ZERO),
+        ))
+        .await;
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(
+            0.3,
+            CONFIG.with_linear_error_tolerance(100.0),
+        ))
+        .await;
+    sleep(Duration::from_millis(300)).await;
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(
+            -0.4,
+            CONFIG
+                .with_linear_error_tolerance(300.0)
+                .with_linear_velocity_tolerance(300.0),
+        ))
+        .await;
+
     // Get the ring in front of alliance stake
     let mut intake_raiser = robot.intake_raiser.clone();
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (-0.2, -2.0).into(),
+            (0.1, -2.2).into(),
             false,
             CONFIG
-                .with_linear_error_tolerance(200.0)
-                .with_linear_velocity_tolerance(600.0),
+                .with_linear_velocity_tolerance(200.0)
+                .with_turn_error_tolerance(0.1),
         ))
         .with_callback(move |pose| {
             if pose.x() < 0.2 * TILES_TO_MM {
@@ -76,7 +121,7 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::drive_to_point(
-            (0.0, 0.4).into(),
+            (0.1, 1.0).into(),
             false,
             CONFIG
                 .with_turn_error_tolerance(0.1)
