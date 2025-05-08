@@ -237,6 +237,67 @@ async fn main(peripherals: Peripherals) {
                     "New",
                     autons::positive_new::blue
                 ),
+                // All sides autons for elims
+                route!(
+                    AutonCategory::RedPositive,
+                    "Alliance 4*",
+                    autons::alliance_four::red_positive
+                ),
+                route!(
+                    AutonCategory::BluePositive,
+                    "Alliance 4*",
+                    autons::alliance_four::blue_positive
+                ),
+                route!(
+                    AutonCategory::RedNegative,
+                    "Alliance 4*",
+                    autons::alliance_four::red_negative
+                ),
+                route!(
+                    AutonCategory::BlueNegative,
+                    "Alliance 4*",
+                    autons::alliance_four::blue_negative
+                ),
+                route!(
+                    AutonCategory::RedPositive,
+                    "Four*",
+                    autons::four::red_positive
+                ),
+                route!(
+                    AutonCategory::BluePositive,
+                    "Four*",
+                    autons::four::blue_positive
+                ),
+                route!(
+                    AutonCategory::RedNegative,
+                    "Four*",
+                    autons::four::red_negative
+                ),
+                route!(
+                    AutonCategory::BlueNegative,
+                    "Four*",
+                    autons::four::blue_negative
+                ),
+                route!(
+                    AutonCategory::RedPositive,
+                    "Five*",
+                    autons::five::red_positive
+                ),
+                route!(
+                    AutonCategory::BluePositive,
+                    "Five*",
+                    autons::five::blue_positive
+                ),
+                route!(
+                    AutonCategory::RedNegative,
+                    "Five*",
+                    autons::five::red_negative
+                ),
+                route!(
+                    AutonCategory::BlueNegative,
+                    "Five*",
+                    autons::five::blue_negative
+                ),
             ],
         ))
         .await;
