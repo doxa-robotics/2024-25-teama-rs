@@ -84,18 +84,46 @@ async fn route(robot: &mut Robot) {
     robot
         .drivetrain
         .action(drivetrain_actions::forward(
-            -0.4,
+            -0.3,
+            CONFIG
+                .with_linear_error_tolerance(100.0)
+                .with_linear_velocity_tolerance(300.0),
+        ))
+        .await;
+    // Since we have time, an extra pass
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(
+            0.3,
+            CONFIG.with_linear_error_tolerance(100.0),
+        ))
+        .await;
+    robot
+        .drivetrain
+        .action(drivetrain_actions::forward(
+            -0.5,
             CONFIG
                 .with_linear_error_tolerance(300.0)
-                .with_linear_velocity_tolerance(300.0),
+                .with_linear_velocity_tolerance(500.0),
         ))
         .await;
 
     // Drive to middle
     robot
+        .lady_brown
+        .set_state(crate::subsystems::lady_brown::LadyBrownState::MaxExpansion);
+    robot
         .drivetrain
-        .action(drivetrain_actions::boomerang_to_point(
-            (2.0, -0.6).into(),
+        .action(drivetrain_actions::drive_to_point(
+            (1.0, -0.7).into(),
+            false,
+            CONFIG,
+        ))
+        .await;
+    robot
+        .drivetrain
+        .action(drivetrain_actions::turn_to_point(
+            (-2.0, 1.5).into(),
             CONFIG,
         ))
         .await;
