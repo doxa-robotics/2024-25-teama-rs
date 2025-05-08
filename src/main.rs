@@ -17,15 +17,11 @@ use core::{cell::RefCell, time::Duration};
 use ::autons::prelude::{SelectCompete, SelectCompeteExt};
 use autons::AutonCategory;
 use autons_controller::{route, ControllerSelect};
-use libdoxa::{
-    subsystems::tracking::wheel::TrackingWheel, utils::pose::Pose,
-};
+use libdoxa::{subsystems::tracking::wheel::TrackingWheel, utils::pose::Pose};
 use log::{error, info};
 use subsystems::{intake::Intake, lady_brown::LadyBrown, Clamp, Doinker, IntakeRaiser};
 use utils::logger;
-use vexide::{
-    prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO,
-};
+use vexide::{prelude::*, startup::banner::themes::THEME_OFFICIAL_LOGO};
 use vexide_motorgroup::MotorGroup;
 
 const DRIVETRAIN_CIRCUMFERENCE: f64 = 164.0;
@@ -191,62 +187,54 @@ async fn main(peripherals: Peripherals) {
                 route!(AutonCategory::Test, "Forward", autons::forward::route),
                 route!(
                     AutonCategory::RedNegative,
-                    "Negative rush",
+                    "Rush",
                     autons::negative_rush::red
                 ),
                 route!(
                     AutonCategory::BlueNegative,
-                    "Negative rush",
+                    "Rush",
                     autons::negative_rush::blue
                 ),
                 route!(
                     AutonCategory::RedNegative,
-                    "Negative middle",
+                    "Middle",
                     autons::negative_middle::red
                 ),
                 route!(
                     AutonCategory::BlueNegative,
-                    "Negative middle",
+                    "Middle",
                     autons::negative_middle::blue
                 ),
                 route!(
                     AutonCategory::RedNegative,
-                    "Negative safe",
+                    "Safe",
                     autons::negative_safe::red
                 ),
                 route!(
                     AutonCategory::BlueNegative,
-                    "Negative safe",
+                    "Safe",
                     autons::negative_safe::blue
                 ),
                 route!(
                     AutonCategory::RedPositive,
-                    "Positive rush",
+                    "Rush",
                     autons::positive_rush::red
                 ),
                 route!(
                     AutonCategory::BluePositive,
-                    "Positive rush",
+                    "Rush",
                     autons::positive_rush::blue
                 ),
-                route!(
-                    AutonCategory::RedPositive,
-                    "Positive AWP",
-                    autons::positive_awp::red
-                ),
+                route!(AutonCategory::RedPositive, "AWP", autons::positive_awp::red),
                 route!(
                     AutonCategory::BluePositive,
-                    "Positive AWP",
+                    "AWP",
                     autons::positive_awp::blue
                 ),
-                route!(
-                    AutonCategory::RedPositive,
-                    "Positive new",
-                    autons::positive_new::red
-                ),
+                route!(AutonCategory::RedPositive, "New", autons::positive_new::red),
                 route!(
                     AutonCategory::BluePositive,
-                    "Positive new",
+                    "New",
                     autons::positive_new::blue
                 ),
             ],
