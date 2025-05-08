@@ -81,6 +81,7 @@ pub fn boomerang_to_point(
     libdoxa::subsystems::drivetrain::actions::BoomerangAction::new(point * TILES_TO_MM, config)
 }
 
+#[allow(unused)]
 pub fn smooth_to_point(
     point: Pose,
     start_easing: f64,
