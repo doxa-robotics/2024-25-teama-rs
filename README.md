@@ -4,6 +4,7 @@
 [![Contact us button](https://img.shields.io/badge/Contact%20us-c33e2e.svg?style=for-the-badge)](https://github.com/orgs/doxa-robotics/discussions/new?category=general)
 
 > ![NOTE]
+> 
 > This repository is archived. Please create a discussion with the button above if you have any questions.
 > このリポジトリーはアーカイブになりました。質問があれば、上のボタンを押してください。
 
